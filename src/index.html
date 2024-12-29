@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Salans Accessible Roads</title>
+        <meta charset="utf-8" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+        />
+        <link rel="stylesheet" href="index.css" />
+    </head>
+    <body>
+        <label for="distance">Distance (m):</label>
+        <input
+            type="number"
+            value="1000"
+            step="100"
+            id="distance"
+            name="distance"
+            min="1000"
+        />
+        <input type="checkbox" id="chemins" name="chemins" />
+        <label for="chemins">Chemins</label>
+
+        <input type="checkbox" id="intersections" name="intersections" />
+        <label for="intersections">Intersections</label>
+
+        <input type="checkbox" id="noeuds" name="noeuds" />
+        <label for="noeuds">Noeuds</label>
+
+        <div id="map"></div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
