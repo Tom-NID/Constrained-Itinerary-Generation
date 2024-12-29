@@ -23,7 +23,7 @@ map.on('click', function (e) {
     customLayers.clearLayers();
 
     // Requete qui recupere toutes les routes de type "secondary|tertiary|..." dans un rayon de "widthKm" autour du point selectione
-    'data=' +
+    query = 'data=' +
         encodeURIComponent(`
           [out:json][timeout:1];
           way(around:${widthKm},${lat},${lng})["highway"~"^(secondary|tertiary|unclassified|residential|living_street|service|pedestrian|track|bus_guideway|escape|raceway|road|busway|footway|bridleway|cycleway|path)$"];
