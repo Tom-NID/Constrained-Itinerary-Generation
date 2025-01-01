@@ -10,23 +10,56 @@
         <link rel="stylesheet" href="index.css" />
     </head>
     <body>
-        <label for="distance">Distance (m):</label>
-        <input
-            type="number"
-            value="1000"
-            step="100"
-            id="distance"
-            name="distance"
-            min="1000"
-        />
-        <input type="checkbox" id="chemins" name="chemins" />
-        <label for="chemins">Chemins</label>
-
-        <input type="checkbox" id="intersections" name="intersections" />
-        <label for="intersections">Intersections</label>
-
-        <input type="checkbox" id="noeuds" name="noeuds" />
-        <label for="noeuds">Noeuds</label>
+        <div id="distance-wrapper">
+            <label for="distance">Distance (m):</label>
+            <input
+                type="number"
+                value="500"
+                step="100"
+                id="distance"
+                name="distance"
+                min="500"
+            />
+            <label for="nbChemins">Nombre de chemins:</label>
+            <input
+                type="number"
+                value="10"
+                step="1"
+                id="nbChemins"
+                name="nbChemins"
+                min="1"
+            />
+            <br />
+            <br />
+            <div id="radio">
+                <input
+                    type="radio"
+                    id="aStar"
+                    name="drone"
+                    value="aStar"
+                    checked
+                />
+                <label for="aStar">A*</label>
+                <input type="radio" id="boucle" name="drone" value="boucle" />
+                <label for="boucle">Boucle</label>
+                <input type="radio" id="osrm" name="drone" value="osrm" />
+                <label for="osrm">OSRM (API)</label>
+            </div>
+            <br />
+            <input type="checkbox" id="intersection" name="intersection" />
+            <label for="intersection">Mode intersection</label>
+            &nbsp;
+            <input
+                type="range"
+                min="0"
+                max="1000"
+                value="1000"
+                range="100"
+                class="slider"
+                id="timer-slider"
+            />
+            <label id="timer-label" for="timer-slider"></label>
+        </div>
 
         <div id="map"></div>
 

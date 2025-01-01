@@ -1,5 +1,10 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
 #map {
-    height: 90vh;
+    height: 100vh;
     width: 100%;
 }
 .info {
@@ -8,4 +13,24 @@
     background: rgba(255, 255, 255, 0.8);
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     border-radius: 5px;
+}
+
+#distance-wrapper {
+    position: absolute;
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    font-weight: 700;
+    right: 0;
+}
+
+#distance,
+#nbChemins {
+    width: fit-content;
+    width: 100px;
+}
+
+#radio input {
+    width: 20px;
 }
