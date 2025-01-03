@@ -1,7 +1,7 @@
 const MAX_REQUEST = 10;
 
 // Initialisation de la map centree sur Besancon
-const map = L.map("map").setView([47.2378, 6.0241], 17);
+const map = L.map("map").setView([47.2378, 6.0241], 10);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -13,28 +13,39 @@ var customLayers = L.layerGroup().addTo(map);
 let lat = 0;
 let lng = 0;
 
-let radius = document.getElementById("distance").value; // rayon du cercle de recherche
-let MAX_PATHS = document.getElementById("nbChemins").value; // nombre de chemins a generer
+let radius = parseInt(document.getElementById("distance").value); // rayon du cercle de recherche
+let MAX_PATHS = parseInt(document.getElementById("nbChemins").value); // nombre de chemins a generer
+let precision = parseInt(document.getElementById("precision-slider").value); // delai entre l'affichage de deux routes (ms)
+
 let delay = document.getElementById("timer-slider").value; // delai entre l'affichage de deux routes (ms)
 
 document.getElementById("distance").addEventListener("change", (e) => {
-  radius = e.target.value;
+  radius = parseInt(e.target.value);
 });
 
 document.getElementById("nbChemins").addEventListener("change", (e) => {
-  MAX_PATHS = e.target.value;
+  MAX_PATHS = parseInt(e.target.value);
 });
 
-const value = document.querySelector("#timer-label");
-const input = document.querySelector("#timer-slider");
-value.textContent = input.value + " ms";
-input.addEventListener("input", (event) => {
+const timer_value = document.querySelector("#timer-label");
+const timer_input = document.querySelector("#timer-slider");
+timer_value.textContent = timer_input.value + " ms";
+timer_input.addEventListener("input", (event) => {
   delay = event.target.value;
-  value.textContent = event.target.value + " ms";
+  timer_value.textContent = event.target.value + " ms";
+});
+
+const precision_value = document.querySelector("#precision-label");
+const precision_input = document.querySelector("#precision-slider");
+precision_value.textContent = `${precision_input.value} (Precision for A*)`;
+precision_input.addEventListener("input", (event) => {
+  precision = event.target.value;
+  precision_value.textContent = `${event.target.value} (Precision for A*)`;
 });
 
 // Genere la requete pour recuperer tous les nodes et routes dans le cercle de recherche
 map.on("click", function (e) {
+  console.log();
   lat = e.latlng.lat;
   lng = e.latlng.lng;
 
@@ -127,6 +138,102 @@ function getGraph(graph, ways, nodeWayCounts, intersection_mode) {
   });
 }
 
+/**
+ * Revoie tous les points autour du perimetre d'un cercle (+-1% du rayon)
+ * @param {*} graph
+ * @param {*} radius Rayon du cercle
+ * @returns
+ */
+function getGoalNodes(graph, radius) {
+  let goalNodes = [];
+  for (let nodeID of Array.from(graph.keys())) {
+    let node = nodes.get(nodeID);
+
+    let distanceToCenter = measure(lat, lng, node[0], node[1]);
+    let imprecision = radius / 100;
+
+    if (
+      distanceToCenter <= radius + imprecision &&
+      distanceToCenter >= radius - imprecision
+    ) {
+      goalNodes.push(nodeID);
+    }
+  }
+  return goalNodes;
+}
+
+/**
+ * Cherche des chemins avec une longueur le plus proche possible du rayon en fonction d'une valeur de precision
+ * @param {*} graph
+ * @param {*} startingNode Node de depart
+ * @param {*} precision Valeure qui influe le nombre d'iterations et le nombre de chemins a prendre en compte
+ * @returns Une liste de chemins, triee en fonction de leur longueur par rapport au rayon
+ */
+function getPathsAStar(graph, startingNode, precision) {
+  let goals = {};
+  let newRadius = radius; // Le rayon a preciser
+  let ratio = 0;
+
+  for (let i = 0; i < precision * 5; ++i) {
+    //   Affiche la zone de recherche
+    displayCircle(
+      nodes.get(startingNode),
+      newRadius,
+      getRandomColor(),
+      "white",
+      1,
+      0
+    );
+
+    let goalNodes = getGoalNodes(graph, newRadius);
+    shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
+
+    let totalPathsLength = 0;
+    let totalLength = 0;
+
+    for (let nodeID of goalNodes.slice(0, MAX_PATHS * precision)) {
+      let path = aStar(graph, startingNode, nodeID, heuristic);
+      if (path) {
+        let length = getPathLength(graph, path);
+
+        // Reduit le path pour ne concerver que les nodes necessaires a une distance proche du radius
+        let currLength = 0;
+        for (let j = 1; j < path.length - 1; ++j) {
+          currLength += graph.get(path[j - 1])[path[j]];
+          if (currLength >= radius) {
+            let index =
+              Math.abs(radius - currLength) <
+              Math.abs(radius - currLength - graph.get(path[j - 1])[path[j]])
+                ? j
+                : j - 1;
+            nodeID = path[index];
+            path = path.slice(0, index + 1);
+            break;
+          }
+        }
+        if (!goals[nodeID]) {
+          goals[nodeID] = { path: path, length: currLength };
+        }
+
+        totalPathsLength += length;
+        totalLength += radius;
+      }
+    }
+
+    // Recalcul du rayon en fonction du resultat
+    ratio = 1 - (totalPathsLength - totalLength) / totalLength;
+    newRadius *= ratio;
+  }
+
+  // Trie des chemins en fonction de leur longueur par rapport au rayon
+  const entries = Object.entries(goals);
+  const sortedEntries = entries.sort(
+    (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius)
+  );
+
+  return sortedEntries.slice(0, MAX_PATHS);
+}
+
 async function processData(data) {
   let use_astar = document.getElementById("aStar").checked;
   let use_boucle = document.getElementById("boucle").checked;
@@ -136,8 +243,6 @@ async function processData(data) {
     : 1;
   const nodeWayCounts = new Map();
   const graph = new Map();
-
-  let goalNodes = [];
 
   // Fait une map de node vers le nombre de nodes lies a lui (pour gerer les intersections)
   console.time("Comptage relations nodes");
@@ -169,17 +274,9 @@ async function processData(data) {
   let startingNode = null;
 
   // Recherche du node le plus proche du click et des nodes les plus proches du perimetre du cercle
-  console.time("Recherche de nodes");
+  console.time("Recherche du centre");
   for (let nodeID of Array.from(graph.keys())) {
     let node = nodes.get(nodeID);
-
-    // Place tous les nodes proche du perimetre (-25m) dans une liste
-    let distanceToCenter = measure(lat, lng, node[0], node[1]);
-    let jsp = 25;
-
-    if (distanceToCenter <= radius && distanceToCenter >= radius - jsp) {
-      goalNodes.push(nodeID);
-    }
 
     // Trouve le node le plus proche du click
     const latDiff = Math.abs(lat - node[0]);
@@ -190,8 +287,7 @@ async function processData(data) {
       startingNode = nodeID;
     }
   }
-  shuffle(goalNodes);
-  console.timeEnd("Recherche de nodes");
+  console.timeEnd("Recherche du centre");
 
   // Affiche le cercle de recherche
   displayCircle(
@@ -221,7 +317,7 @@ async function processData(data) {
     const paths = makePaths(graph, startingNode, radius, MAX_PATHS);
     for (let path of paths) {
       coordinates = path.path.map((nodeID) => nodes.get(nodeID));
-      displayPath(coordinates, getRandomColor(), path.length);
+      displayPath(coordinates, getRandomColor(), 1, path.length);
       await sleep(delay);
     }
   }
@@ -230,38 +326,22 @@ async function processData(data) {
    *  MODE A*
    */
   if (use_astar) {
-    // Fonction pour estimer le cout d'un node par rapport a un autre
-    // Pour l'instant simple calcul de distance
-    function heuristic(node1, node2) {
-      return Math.sqrt(
-        (nodes.get(node2)[0] - nodes.get(node1)[0]) ** 2 +
-          (nodes.get(node2)[1] - nodes.get(node1)[1]) ** 2
-      );
-    }
+    let paths = getPathsAStar(graph, startingNode, precision);
+    for (let path of paths) {
+      const coordinates = path[1].path.map((nodeID) => nodes.get(nodeID));
+      const length = path[1].length;
+      const node = nodes.get(parseInt(path[0]));
+      const color = getRandomColor();
 
-    let nb_chemins = 0;
-    for (let nodeID of goalNodes) {
-      if (nb_chemins >= MAX_PATHS) break;
+      // Affiche le point d'arrive de la route
+      displayCircle([node[0], node[1]], 10, color, color, 1, 1);
 
-      let node = nodes.get(nodeID);
-
-      if (nb_chemins > MAX_PATHS) break;
-
-      let path = aStar(graph, startingNode, nodeID, heuristic);
-
-      if (path) {
-        let coordinates = path.map((id) => nodes.get(id));
-        let color = getRandomColor();
-
-        // Affiche le point d'arrive de la route
-        displayCircle([node[0], node[1]], 10, color, color, 1, 1);
-
-        // Affiche la route
-        displayPath(coordinates, color, getPathLength(graph, path));
-        await sleep(delay);
-
-        ++nb_chemins;
+      // Affiche la route
+      displayPath(coordinates, color, 0.7, length);
+      for (let coordinate of coordinates) {
+        displayCircle(coordinate, 3, color, color, 1, 1);
       }
+      await sleep(delay);
     }
   }
 
@@ -269,6 +349,7 @@ async function processData(data) {
    *  MODE OSRM
    */
   if (use_OSRM) {
+    let goalNodes = getGoalNodes(graph, radius);
     let nb_request = 0;
     for (let nodeID of goalNodes) {
       if (nb_request >= MAX_REQUEST || nb_request >= MAX_PATHS) break;
@@ -301,7 +382,7 @@ async function processData(data) {
       );
 
       // Affiche la route
-      displayPath(formattedRouteCoordinates, color, routeLength);
+      displayPath(formattedRouteCoordinates, color, 1, routeLength);
       await sleep(delay);
 
       ++nb_request;
@@ -310,6 +391,15 @@ async function processData(data) {
   console.timeEnd("Calcul itineraires");
 
   graph.clear();
+}
+
+// Fonction pour estimer le cout d'un node par rapport a un autre
+// Pour l'instant simple calcul de distance
+function heuristic(node1, node2) {
+  return Math.sqrt(
+    (nodes.get(node2)[0] - nodes.get(node1)[0]) ** 2 +
+      (nodes.get(node2)[1] - nodes.get(node1)[1]) ** 2
+  );
 }
 
 function aStar(graph, start, goal, heuristic) {
@@ -377,7 +467,7 @@ function aStar(graph, start, goal, heuristic) {
   return null;
 }
 
-// Improved Priority Queue implementation
+// Queue de prio
 class PriorityQueue {
   constructor() {
     this.elements = [];
@@ -462,6 +552,12 @@ function makePaths(graph, start, length, size) {
   return paths;
 }
 
+/**
+ *
+ * @param {*} graph
+ * @param {*} path Chemin dont la longueur est evaluee
+ * @returns La longueur du chemin
+ */
 function getPathLength(graph, path) {
   let len = 0;
   for (let i = 1; i < path.length - 1; ++i) {
@@ -493,11 +589,11 @@ function measure(lat1, lon1, lat2, lon2) {
  * @param {*} coordinates Les coordonees constituant le chemin
  * @param {*} color La couleur du chemin
  */
-function displayPath(coordinates, color, length) {
+function displayPath(coordinates, color, opacity, length) {
   const polyline = L.polyline(coordinates, {
     color: color,
     weight: 5,
-    opacity: 1,
+    opacity: opacity,
   }).addTo(customLayers);
 
   polyline.bindPopup(`${Math.floor(length)}m`);
@@ -521,7 +617,7 @@ function displayCircle(
   opacity,
   fillOpacity
 ) {
-  L.circle(coordinate, {
+  return L.circle(coordinate, {
     radius: radius,
     color: color,
     fillColor: fillColor,
@@ -562,4 +658,3 @@ function shuffle(array) {
     ];
   }
 }
-// TODO contrainte de direction
