@@ -1,3 +1,10 @@
+// const Graph = require("./Graph");
+import Graph from "./Graph.js";
+import PriorityQueue from "./PriorityQueue.js";
+// const PriorityQueue = require("./PriorityQueue");
+
+const graph = new Graph();
+
 const MAX_REQUEST = 10;
 
 // Initialisation de la map centree sur Besancon
@@ -58,7 +65,7 @@ map.on("click", function (e) {
     customLayers.clearLayers();
 
     // Requete qui recupere toutes les routes de type "secondary|tertiary|..." dans un rayon de "radius" autour du point selectione
-    query =
+    const query =
         "data=" +
         encodeURIComponent(`
           [out:json][timeout:10];
@@ -114,8 +121,7 @@ async function fetchRoute(coordinates) {
 }
 
 // Affiche toutes les routes dans data
-const nodes = new Map();
-function getGraph(graph, ways, nodeWayCounts, intersection_mode) {
+function getGraph(ways, nodeWayCounts, intersection_mode) {
     ways.forEach((element) => {
         if (element.type === "way") {
             // Conserve uniquement les intersections desirees
@@ -124,22 +130,19 @@ function getGraph(graph, ways, nodeWayCounts, intersection_mode) {
             );
 
             for (let i = 0; i < element.nodes.length - 1; i++) {
-                const node1 = element.nodes[i];
-                const node2 = element.nodes[i + 1];
+                const nodeId1 = element.nodes[i];
+                const nodeId2 = element.nodes[i + 1];
                 if (
-                    nodes.get(node1) !== undefined &&
-                    nodes.get(node2) !== undefined
+                    graph.getCoordinates(nodeId1) !== undefined &&
+                    graph.getCoordinates(nodeId2) !== undefined
                 ) {
                     const distance = measure(
-                        nodes.get(node1)[0],
-                        nodes.get(node1)[1],
-                        nodes.get(node2)[0],
-                        nodes.get(node2)[1]
+                        graph.getCoordinates(nodeId1)[0],
+                        graph.getCoordinates(nodeId1)[1],
+                        graph.getCoordinates(nodeId2)[0],
+                        graph.getCoordinates(nodeId2)[1]
                     );
-                    if (!graph.get(node1)) graph.set(node1, {});
-                    if (!graph.get(node2)) graph.set(node2, {});
-                    graph.get(node1)[node2] = distance;
-                    graph.get(node2)[node1] = distance;
+                    graph.addEdge(nodeId1, nodeId2, distance);
                 }
             }
         }
@@ -148,20 +151,20 @@ function getGraph(graph, ways, nodeWayCounts, intersection_mode) {
 
 /**
  * Revoie tous les points autour du perimetre d'un cercle (+-1% du rayon)
- * @param {*} graph
  * @param {*} radius Rayon du cercle
  * @returns
  */
-function getGoalNodes(graph, radius) {
+function getGoalNodes(radius) {
     let goalNodes = [];
-    let inaccuracy = radius / 100;
-    inaccuracy = Math.min(inaccuracy, 25); // Accuracy minimum
+    let inaccuracy = radius / 100; // 1% d'imprecision
+    inaccuracy = Math.max(inaccuracy, 25); // Accuracy minimum
 
     while (goalNodes.length == 0) {
-        for (let nodeID of Array.from(graph.keys())) {
-            let node = nodes.get(nodeID);
+        for (let nodeID of graph.getNodes()) {
+            let nodeCoo = graph.getCoordinates(nodeID);
+            // let node = graph.getCoordinates(nodeID);
 
-            let distanceToCenter = measure(lat, lng, node[0], node[1]);
+            let distanceToCenter = measure(lat, lng, nodeCoo[0], nodeCoo[1]);
             if (
                 distanceToCenter <= radius + inaccuracy &&
                 distanceToCenter >= radius - inaccuracy
@@ -176,19 +179,18 @@ function getGoalNodes(graph, radius) {
 
 /**
  * Cherche des chemins avec une longueur le plus proche possible du rayon en fonction d'une valeur de precision
- * @param {*} graph
  * @param {*} startingNode Node de depart
  * @param {*} precision Valeure qui influe le nombre d'iterations et le nombre de chemins a prendre en compte
  * @returns Une liste de chemins, triee en fonction de leur longueur par rapport au rayon
  */
-function getPathsAStar(graph, startingNode, precision, searchRadius) {
+function getPathsAStar(startingNode, precision, searchRadius) {
     let goals = {};
     let ratio = 0;
 
     for (let i = 0; i < precision * 5; ++i) {
         //   Affiche la zone de recherche
         displayCircle(
-            nodes.get(startingNode),
+            graph.getCoordinates(startingNode),
             searchRadius,
             getRandomColor(),
             "white",
@@ -196,13 +198,13 @@ function getPathsAStar(graph, startingNode, precision, searchRadius) {
             0
         );
 
-        let goalNodes = getGoalNodes(graph, searchRadius);
+        let goalNodes = getGoalNodes(searchRadius);
         shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
 
         let totalPathsLength = 0;
         let totalLength = 0;
 
-        const nbCheckedNodes = (MAX_PATHS < 10 ? 10 : MAX_PATHS) * precision;
+        const nbCheckedNodes = Math.max(MAX_PATHS, 10) * precision;
 
         for (let nodeID of goalNodes.slice(0, nbCheckedNodes)) {
             let path = aStar(graph, startingNode, nodeID, heuristic);
@@ -212,17 +214,17 @@ function getPathsAStar(graph, startingNode, precision, searchRadius) {
                 // Reduit le path pour ne concerver que les nodes necessaires a une distance proche du radius
                 let currLength = 0;
                 for (let j = 1; j < path.length - 1; ++j) {
-                    currLength += graph.get(path[j - 1])[path[j]];
+                    currLength += graph.getCost(path[j - 1], path[j]);
                     if (currLength >= radius) {
                         let index =
                             Math.abs(radius - currLength) <
                             Math.abs(
                                 radius -
                                     currLength -
-                                    graph.get(path[j - 1])[path[j]]
+                                    graph.getCost(path[j - 1], path[j])
                             )
                                 ? j
-                                : j - 1;
+                                : j - 1; // Minimise la difference entre currLength et radius
                         nodeID = path[index];
                         path = path.slice(0, index + 1);
                         break;
@@ -238,8 +240,10 @@ function getPathsAStar(graph, startingNode, precision, searchRadius) {
         }
 
         // Recalcul du rayon en fonction du resultat
-        ratio = 1 - (totalPathsLength - totalLength) / totalLength;
-        searchRadius *= ratio;
+        if (totalLength !== 0) {
+            ratio = 1 - (totalPathsLength - totalLength) / totalLength;
+            searchRadius *= ratio;
+        }
     }
 
     // Trie des chemins en fonction de leur longueur par rapport au rayon
@@ -255,20 +259,19 @@ function getPathsAStar(graph, startingNode, precision, searchRadius) {
 /**
  * Trouve un circuit (chemin qui part et arrive du meme point en limitant les croisements) d'une longueur de 2 * searchRadius.
  * Le circuit est trouve utilisant A* deux fois pour aller au meme point, en modifiant le graph entre les deux utilisations de A* afin qu'il ne reutilise pas le meme chemin.
- * @param {*} graph Le graph dans lequel trouver le circuit
  * @param {*} startingNode Le point de depart et d'arrive du circuit
  * @param {*} precision Facteur pour le nombre d'iterations
  * @param {*} searchRadius Le rayon de recherhe qui correspond a la taille d'un chemin (alle ou retour) de la boucle, la boucle doit donc faire une longueur de 2 * searchRadius
  * @returns
  */
-function getCircuitAStar(graph, startingNode, precision, searchRadius) {
+function getCircuitAStar(startingNode, precision, searchRadius) {
     let goals = {};
     let ratio = 0;
 
     for (let i = 0; i < precision * 5; ++i) {
         //   Affiche la zone de recherche
         const circle = displayCircle(
-            nodes.get(startingNode),
+            graph.getCoordinates(startingNode),
             searchRadius,
             getRandomColor(),
             "white",
@@ -281,7 +284,7 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
         let inaccuracy = radius / 100;
         inaccuracy = inaccuracy < 25 ? 25 : inaccuracy;
         // circle = displayCircle(
-        //   nodes.get(startingNode),
+        //   graph.getCoordinates(startingNode),
         //   searchRadius + inaccuracy,
         //   "red",
         //   "white",
@@ -289,7 +292,7 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
         //   0
         // );
         // circle = displayCircle(
-        //   nodes.get(startingNode),
+        //   graph.getCoordinates(startingNode),
         //   searchRadius - inaccuracy,
         //   "red",
         //   "white",
@@ -297,13 +300,14 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
         //   0
         // );
 
-        let goalNodes = getGoalNodes(graph, searchRadius);
+        let goalNodes = getGoalNodes(searchRadius);
         shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
 
         let totalPathsLength = 0;
         let totalLength = 0;
 
-        const nbCheckedNodes = (MAX_PATHS < 10 ? 10 : MAX_PATHS) * precision;
+        // const nbCheckedNodes = (MAX_PATHS < 10 ? 10 : MAX_PATHS) * precision;
+        const nbCheckedNodes = Math.max(MAX_PATHS, 10) * precision;
 
         for (let nodeID of goalNodes.slice(0, nbCheckedNodes)) {
             let path = aStar(graph, startingNode, nodeID, heuristic);
@@ -311,17 +315,17 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
                 // Reduit le path pour ne concerver que les nodes necessaires a une distance proche du searchRadius
                 let currLength = 0;
                 for (let j = 1; j < path.length - 1; ++j) {
-                    currLength += graph.get(path[j - 1])[path[j]];
+                    currLength += graph.getCost(path[j - 1], path[j]);
                     if (currLength >= searchRadius) {
                         let index =
                             Math.abs(searchRadius - currLength) <
                             Math.abs(
                                 searchRadius -
                                     currLength -
-                                    graph.get(path[j - 1])[path[j]]
+                                    graph.getCost(path[j - 1], path[j])
                             )
                                 ? j
-                                : j - 1;
+                                : j - 1; // Minimise la difference entre currLength et radius
                         nodeID = path[index];
                         path = path.slice(0, index + 1);
                         break;
@@ -329,9 +333,9 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
                 }
 
                 // Augmente le cout des arretes deja utilises pour ne les utiliser qu'en dernier recourt pour la deuxieme generation de chemin
-                const tempGraph = structuredClone(graph);
+                const tempGraph = graph.clone();
                 for (let i = 1; i < path.length; ++i) {
-                    tempGraph.get(path[i - 1])[path[i]] = Infinity;
+                    tempGraph.setCost(path[i - 1], path[i], Infinity);
                 }
 
                 // Chemin du retour
@@ -362,11 +366,6 @@ function getCircuitAStar(graph, startingNode, precision, searchRadius) {
         }
 
         // Recalcul du rayon en fonction du resultat
-        if (totalLength == 0) {
-            alert("No paths found");
-            return null;
-        }
-
         ratio = 1 - (totalPathsLength - totalLength) / totalLength;
         searchRadius *= ratio;
         console.log(
@@ -399,7 +398,6 @@ async function processData(data) {
         ? 2
         : 1;
     const nodeWayCounts = new Map();
-    const graph = new Map();
 
     // Fait une map de node vers le nombre de nodes lies a lui (pour gerer les intersections)
     console.time("Comptage relations nodes");
@@ -417,22 +415,22 @@ async function processData(data) {
     console.time("Instanciation des nodes");
     data.elements.forEach((element) => {
         if (nodeWayCounts.get(element.id) >= intersection_mode)
-            nodes.set(element.id, [element.lat, element.lon]);
+            graph.addNode(element.id, element.lat, element.lon);
     });
     console.timeEnd("Instanciation des nodes");
 
     console.time("Creation du graph");
     // Creation du graph
-    getGraph(graph, data.elements, nodeWayCounts, intersection_mode);
+    getGraph(data.elements, nodeWayCounts, intersection_mode);
     console.timeEnd("Creation du graph");
 
-    if (graph.size == 0) {
+    if (graph.getSize() == 0) {
         alert("No roads found");
         return;
     }
 
     // for (nodeID of Array.from(graph.keys())) {
-    //     displayCircle(nodes.get(nodeID), 3, "blue", "blue", 0, 0.5);
+    //     displayCircle(graph.getCoordinates(nodeID), 3, "blue", "blue", 0, 0.5);
     // }
 
     // Pour le calcul du node le plus proche du click
@@ -441,12 +439,11 @@ async function processData(data) {
 
     // Recherche du node le plus proche du click et des nodes les plus proches du perimetre du cercle
     console.time("Recherche du centre");
-    for (let nodeID of Array.from(graph.keys())) {
-        let node = nodes.get(nodeID);
-
+    for (let nodeID of Array.from(graph.getNodes())) {
+        const nodeCoo = graph.getCoordinates(nodeID);
         // Trouve le node le plus proche du click
-        const latDiff = Math.abs(lat - node[0]);
-        const lonDiff = Math.abs(lng - node[1]);
+        const latDiff = Math.abs(lat - nodeCoo[0]);
+        const lonDiff = Math.abs(lng - nodeCoo[1]);
         if (latDiff + lonDiff < minDistance) {
             // Somme des différences
             minDistance = latDiff + lonDiff;
@@ -457,7 +454,7 @@ async function processData(data) {
 
     // Affiche le cercle de recherche
     displayCircle(
-        [nodes.get(startingNode)[0], nodes.get(startingNode)[1]],
+        graph.getCoordinates(startingNode),
         searchRadius,
         "blue",
         "lightblue",
@@ -466,14 +463,7 @@ async function processData(data) {
     );
 
     // Affiche le node le plus proche du click
-    displayCircle(
-        [nodes.get(startingNode)[0], nodes.get(startingNode)[1]],
-        10,
-        "blue",
-        "blue",
-        1,
-        1
-    );
+    displayCircle(graph.getCoordinates(startingNode), 10, "blue", "blue", 1, 1);
 
     console.time("Calcul itineraires");
     /**
@@ -482,47 +472,12 @@ async function processData(data) {
     if (use_boucle) {
         const paths = makePaths(graph, startingNode, searchRadius, MAX_PATHS);
         for (let path of paths) {
-            coordinates = path.path.map((nodeID) => nodes.get(nodeID));
+            const coordinates = path.path.map((nodeID) =>
+                graph.getCoordinates(nodeID)
+            );
+
             displayPath(coordinates, getRandomColor(), 1, path.length);
             await sleep(delay);
-        }
-    }
-
-    /**
-     * MODE CIRCUIT
-     */
-    if (use_circuit) {
-        // const paths = getPathsAStar(graph, startingNode, precision, searchRadius);
-        const paths = getCircuitAStar(
-            graph,
-            startingNode,
-            precision,
-            searchRadius
-        );
-        if (paths != null) {
-            for (let path of paths) {
-                const coordinates = path[1].path.map((nodeID) =>
-                    nodes.get(nodeID)
-                );
-                const nodesID = path[1].path;
-                const length = path[1].length;
-                const goalID = parseInt(path[0]);
-                const goalNode = nodes.get(goalID);
-                const color = getRandomColor();
-
-                // Affiche le point d'arrive de la route
-                displayCircle(
-                    [goalNode[0], goalNode[1]],
-                    10,
-                    color,
-                    color,
-                    1,
-                    1
-                );
-
-                displayPath(coordinates, color, 0.7, length);
-                await sleep(delay);
-            }
         }
     }
 
@@ -530,14 +485,14 @@ async function processData(data) {
      *  MODE A*
      */
     if (use_astar) {
-        let paths = getPathsAStar(graph, startingNode, precision, searchRadius);
+        let paths = getPathsAStar(startingNode, precision, searchRadius);
         if (paths != null) {
             for (let path of paths) {
                 const coordinates = path[1].path.map((nodeID) =>
-                    nodes.get(nodeID)
+                    graph.getCoordinates(nodeID)
                 );
                 const length = path[1].length;
-                const node = nodes.get(parseInt(path[0]));
+                const node = graph.getCoordinates(parseInt(path[0]));
                 const color = getRandomColor();
 
                 // Affiche le point d'arrive de la route
@@ -554,24 +509,28 @@ async function processData(data) {
     }
 
     /**
-     *  MODE OSRM
+     *  MODE OSRM (pourri)
      */
     if (use_OSRM) {
-        let goalNodes = getGoalNodes(graph, searchRadius);
+        let goalNodes = getGoalNodes(searchRadius);
         let nb_request = 0;
         for (let nodeID of goalNodes) {
+            // Limite de requetes car l'API est destinee a la demo
             if (nb_request >= MAX_REQUEST || nb_request >= MAX_PATHS) break;
 
             // Coordonees du point de depart et du point d'arrive
-            const coordinates = [nodes.get(startingNode), nodes.get(nodeID)];
-            const formattedCoordinates = coordinates.map(([a, b]) => [b, a]);
+            const coordinates = [
+                graph.getCoordinates(startingNode),
+                graph.getCoordinates(nodeID),
+            ];
+            const formattedCoordinates = coordinates.map(([a, b]) => [b, a]); // Inverse lat et lon pour l'API
 
-            // Récupérer les coordonnées de la route
+            // Recuperer les coordonnees de la route
             const routesData = await fetchRoute(formattedCoordinates);
             const routeCoordinates = routesData.geometry.coordinates;
             const routeLength = routesData.distance;
 
-            // Inverser les coordonnées pour Leaflet (lat, lng)
+            // Inverser les coordonnees pour Leaflet (lat, lng)
             const formattedRouteCoordinates = routeCoordinates.map((coord) => [
                 coord[1],
                 coord[0],
@@ -580,20 +539,38 @@ async function processData(data) {
             let color = getRandomColor();
 
             // Affiche le point d'arrive de la route
-            displayCircle(
-                [nodes.get(nodeID)[0], nodes.get(nodeID)[1]],
-                10,
-                color,
-                color,
-                1,
-                1
-            );
+            displayCircle(graph.getCoordinates(nodeID), 10, color, color, 1, 1);
 
             // Affiche la route
             displayPath(formattedRouteCoordinates, color, 1, routeLength);
             await sleep(delay);
 
             ++nb_request;
+        }
+    }
+
+    /**
+     * MODE CIRCUIT
+     */
+    if (use_circuit) {
+        const paths = getCircuitAStar(startingNode, precision, searchRadius);
+        if (paths != null) {
+            for (let path of paths) {
+                const coordinates = path[1].path.map((nodeID) =>
+                    graph.getCoordinates(nodeID)
+                );
+                // const nodesID = path[1].path;
+                const length = path[1].length;
+                const goalID = parseInt(path[0]);
+                const goalNode = graph.getCoordinates(goalID);
+                const color = getRandomColor();
+
+                // Affiche le point d'arrive de la route
+                displayCircle(goalNode, 10, color, color, 1, 1);
+
+                displayPath(coordinates, color, 0.7, length);
+                await sleep(delay);
+            }
         }
     }
     console.timeEnd("Calcul itineraires");
@@ -604,10 +581,11 @@ async function processData(data) {
 // Fonction pour estimer le cout d'un node par rapport a un autre
 // Pour l'instant simple calcul de distance
 function heuristic(node1, node2) {
-    // return measure(nodes.get(node2)[0], nodes.get(node2)[1], nodes.get(node1)[0], nodes.get(node1)[1]);
+    // return measure(graph.getCoordinates(node2)[0], graph.getCoordinates(node2)[1], graph.getCoordinates(node1)[0], graph.getCoordinates(node1)[1]);
     return Math.sqrt(
-        (nodes.get(node2)[0] - nodes.get(node1)[0]) ** 2 +
-            (nodes.get(node2)[1] - nodes.get(node1)[1]) ** 2
+        (graph.getCoordinates(node2)[0] - graph.getCoordinates(node1)[0]) ** 2 +
+            (graph.getCoordinates(node2)[1] - graph.getCoordinates(node1)[1]) **
+                2
     );
 }
 
@@ -623,7 +601,7 @@ function aStar(graph, start, goal, heuristic) {
     let gScore = new Map();
     gScore.set(start, 0);
 
-    // Estimated total cost from start to goal through each node
+    // Cout total du entre deux nodes
     let fScore = new Map();
     fScore.set(start, heuristic(start, goal));
 
@@ -631,82 +609,56 @@ function aStar(graph, start, goal, heuristic) {
     let closedSet = new Set();
 
     while (!openSet.isEmpty()) {
-        let current = openSet.dequeue();
+        let currentId = openSet.dequeue();
 
         // Si le node a deja ete visite
-        if (closedSet.has(current)) {
+        if (closedSet.has(currentId)) {
             continue;
         }
-        closedSet.add(current);
+        closedSet.add(currentId);
 
         // Si le goal est atteint, on recupere le chemin
-        if (current === goal) {
-            return reconstructPath(cameFrom, current);
+        if (currentId === goal) {
+            return reconstructPath(cameFrom, currentId);
         }
 
         // Evalue les voisins
-        for (let neighbor in graph.get(current)) {
-            neighbor = parseInt(neighbor);
+        for (let neighborId of graph.getNeighbors(currentId)) {
+            neighborId = parseInt(neighborId);
 
-            if (closedSet.has(neighbor)) {
+            if (closedSet.has(neighborId)) {
                 continue;
             }
 
-            // gScore total du depart jusque au voisin de current
+            // gScore total du depart jusque au voisin de currentId
             let tentativeGScore =
-                gScore.get(current) + graph.get(current)[neighbor];
+                gScore.get(currentId) + graph.getCost(currentId, neighborId);
 
             if (
-                !gScore.has(neighbor) ||
-                tentativeGScore < gScore.get(neighbor)
+                !gScore.has(neighborId) ||
+                tentativeGScore < gScore.get(neighborId)
             ) {
                 // Si le chemin est plus court (moins cher) que le precedent vers ce point
 
-                // Change le chemin vers neighbor
-                cameFrom.set(neighbor, current);
+                // Change le chemin vers le voisin
+                cameFrom.set(neighborId, currentId);
 
-                // Change le gScore pour neighbor
-                gScore.set(neighbor, tentativeGScore);
+                // Change le gScore pour le voisin
+                gScore.set(neighborId, tentativeGScore);
 
-                // Change le fScore pour neighbor
+                // Change le fScore pour le voisin
                 fScore.set(
-                    neighbor,
-                    gScore.get(neighbor) + heuristic(neighbor, goal)
+                    neighborId,
+                    gScore.get(neighborId) + heuristic(neighborId, goal)
                 );
 
-                // Ajoute neighbor a la queue de priorite avec son fscore comme valeure de prio
-                openSet.enqueue(neighbor, fScore.get(neighbor));
+                // Ajoute le voisin a la queue de priorite avec son fscore comme valeure de prio
+                openSet.enqueue(neighborId, fScore.get(neighborId));
             }
         }
     }
 
     return null;
-}
-
-// Queue de prio
-class PriorityQueue {
-    constructor() {
-        this.elements = [];
-    }
-
-    enqueue(item, priority) {
-        if (!this.has(item)) {
-            this.elements.push({ item, priority });
-            this.elements.sort((a, b) => a.priority - b.priority);
-        }
-    }
-
-    dequeue() {
-        return this.elements.shift().item;
-    }
-
-    isEmpty() {
-        return this.elements.length === 0;
-    }
-
-    has(item) {
-        return this.elements.some((element) => element.item === item);
-    }
 }
 
 function reconstructPath(cameFrom, current) {
@@ -726,41 +678,42 @@ function reconstructPath(cameFrom, current) {
  * @param {*} size Nombre de chemins
  * @returns
  */
-function makePaths(graph, start, length, size) {
+function makePaths(graph, startId, length, size) {
     let alreadyVisited = [];
     let paths = [];
     for (let i = 0; i < size; ++i) {
-        let current = start;
+        let currentId = startId;
         let len = 0;
-        let currPath = [start];
+        let currPath = [startId];
 
         // Iteration jusqu'a que la taille du chemin soint >= a length
         while (len < length) {
-            alreadyVisited.push(current);
-            currPath.push(current);
+            alreadyVisited.push(currentId);
+            currPath.push(currentId);
 
             // Ajoute un nouveau voisin au chemin
-            for (let neighbor in graph.get(current)) {
-                neighbor = parseInt(neighbor);
-                if (!alreadyVisited.includes(neighbor)) {
-                    len += graph.get(current)[neighbor];
-                    current = neighbor;
+
+            for (let neighborId of graph.getNeighbors(currentId)) {
+                neighborId = parseInt(neighborId);
+                if (!alreadyVisited.includes(neighborId)) {
+                    len += graph.getCost(currentId, neighborId);
+                    currentId = neighborId;
                     break;
                 }
             }
 
             // Si tous les voisins on ete visites, reset
-            if (alreadyVisited[alreadyVisited.length - 1] == current) {
-                for (let neighbor in graph.get(current)) {
-                    neighbor = parseInt(neighbor);
-                    const index = alreadyVisited.indexOf(neighbor);
+            if (alreadyVisited[alreadyVisited.length - 1] == currentId) {
+                for (let neighborId of graph.getNeighbors(currentId)) {
+                    neighborId = parseInt(neighborId);
+                    const index = alreadyVisited.indexOf(neighborId);
                     if (index > -1) {
                         alreadyVisited.splice(index, 1);
                     }
                 }
-                const next = parseInt(Object.keys(graph.get(current))[0]);
-                len += graph.get(current)[next];
-                current = next;
+                const nextId = parseInt(graph.getNeighbors(currentId)[0]);
+                len += graph.getCost(currentId, nextId);
+                currentId = nextId;
             }
         }
         paths.push({ path: currPath, length: len });
@@ -777,7 +730,7 @@ function makePaths(graph, start, length, size) {
 function getPathLength(graph, path) {
     let len = 0;
     for (let i = 1; i < path.length - 1; ++i) {
-        len += graph.get(path[i - 1])[path[i]];
+        len += graph.getCost(path[i - 1], path[i]);
     }
     return len;
 }

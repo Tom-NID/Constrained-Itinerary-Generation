@@ -1,80 +1,84 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Constrained Itinerary Generation</title>
-    <meta charset="utf-8" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
-    />
-    <link rel="stylesheet" href="index.css" />
-  </head>
-  <body>
-    <div id="distance-wrapper">
-      <label for="distance">Distance (m):</label>
-      <input
-        type="number"
-        value="500"
-        step="100"
-        id="distance"
-        name="distance"
-        min="500"
-      />
-      <label for="nbChemins">Nombre de chemins:</label>
-      <input
-        type="number"
-        value="10"
-        step="1"
-        id="nbChemins"
-        name="nbChemins"
-        min="1"
-      />
-      &nbsp; &nbsp;
-      <input type="checkbox" id="intersection" name="intersection" />
-      <label for="intersection">Mode intersection</label>
-      <br />
-      <br />
-      <div id="radio">
-        <input type="radio" id="aStar" name="drone" value="aStar" checked />
-        <label for="aStar">A*</label>
-        <input type="radio" id="boucle" name="drone" value="boucle" />
-        <label for="boucle">Boucle</label>
-        <input type="radio" id="osrm" name="drone" value="osrm" />
-        <label for="osrm">OSRM (API)</label>
-        <input type="radio" id="circuit" name="drone" value="circuit" />
-        <label for="circuit">Circuit</label>
-        &nbsp; &nbsp;
-        <input
-          type="range"
-          min="1"
-          max="20"
-          value="1"
-          range="1"
-          class="slider"
-          id="precision-slider"
+    <head>
+        <title>Constrained Itinerary Generation</title>
+        <meta charset="utf-8" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
         />
-        <label id="precision-label" for="precision-slider"></label>
-      </div>
+        <link rel="stylesheet" href="index.css" />
+    </head>
+    <body>
+        <div id="distance-wrapper">
+            <label for="distance">Distance (m):</label>
+            <input
+                type="number"
+                value="500"
+                step="100"
+                id="distance"
+                name="distance"
+                min="500"
+            />
+            <label for="nbChemins">Nombre de chemins:</label>
+            <input
+                type="number"
+                value="10"
+                step="1"
+                id="nbChemins"
+                name="nbChemins"
+                min="1"
+            />
+            &nbsp; &nbsp;
+            <input type="checkbox" id="intersection" name="intersection" />
+            <label for="intersection">Mode intersection</label>
+            <br />
+            <br />
+            <div id="radio">
+                <input
+                    type="radio"
+                    id="aStar"
+                    name="drone"
+                    value="aStar"
+                    checked
+                />
+                <label for="aStar">A*</label>
+                <input type="radio" id="boucle" name="drone" value="boucle" />
+                <label for="boucle">Boucle</label>
+                <input type="radio" id="osrm" name="drone" value="osrm" />
+                <label for="osrm">OSRM (API)</label>
+                <input type="radio" id="circuit" name="drone" value="circuit" />
+                <label for="circuit">Circuit</label>
+                &nbsp; &nbsp;
+                <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value="1"
+                    range="1"
+                    class="slider"
+                    id="precision-slider"
+                />
+                <label id="precision-label" for="precision-slider"></label>
+            </div>
 
-      <br />
-      <br />
-      <input
-        type="range"
-        min="0"
-        max="1000"
-        value="1000"
-        range="100"
-        class="slider"
-        id="timer-slider"
-      />
-      <label id="timer-label" for="timer-slider"></label>
-    </div>
+            <br />
+            <br />
+            <input
+                type="range"
+                min="0"
+                max="1000"
+                value="1000"
+                range="100"
+                class="slider"
+                id="timer-slider"
+            />
+            <label id="timer-label" for="timer-slider"></label>
+        </div>
 
-    <div id="map"></div>
-    <script>
-      
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="index.js"></script>
-  </body>
+        <div id="map"></div>
+        <script></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script type="module" src="index.js"></script>
+    </body>
 </html>
