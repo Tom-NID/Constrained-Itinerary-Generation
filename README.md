@@ -7,65 +7,81 @@ Prerequisites
 - C++ Compiler: GCC or Clang (with C++11 support or later).
 - CMake: Version 3.10 or higher.
 - Boost: Required for Crow.
-    - Linux : 
+    - Debian / Ubuntu : 
         ```
         sudo apt-get install libboost-all-dev
-
         sudo apt-get install libasio-dev
         ```
+    - Arch
+        ```
+        sudo pacman -S boost
+        sudo pacman -S asio
+        ```
 - Curl
+  - Debian / Ubuntu 
+      ```
+      sudo apt-get install curl
+      ```
+  - Arch
+    ```
+    sudo pacman -S curl
+    ```      
     
 ## Compiling from source
-### Install dependencies:
-- Crow
+### Get the project:
+Clone the repo and move to the project folder:
+```
+git clone https://github.com/Tom-NID/Constrained-Itinerary-Generation && cd Constrained-Itinerary-Generation
+```
 
-Follow the instructions on Crow git
+### Get crow:
+Clone the repo and go the the scripts directory:
+```
+git clone https://github.com/CrowCpp/Crow.git && cd Crow/scripts
+```
 
-    git clone https://github.com/CrowCpp/Crow.git
+Generate craw_all.h:
+```
+./merge_all.py ../include/ craw_all.h
+```
 
-- Curl
+Move craw_all.h to the project directory:
+```
+mv crow_all.h ../../server/ && cd ..
+```
 
-Install curl   
+Optionally remove the crow Folder:
+```
+rm -rf Crow/
+```
 
-    https://curl.se/
+### Build the Server:
 
-
-### Get the code :
-
-    git clone https://github.com/Tom-NID/Constrained-Itinerary-Generation && cd Constrained-Itinerary-Generation
-
-Generate crow_all.h
-
-This creates a crow_all.h file in the root of the Crow repository.
-
-Move the crow_all.h file to your project’s server directory:
-
-    mv crow_all.h ../Constrained-Itinerary-Generation/server/
-
-Return to the server directory:
-
-    cd ../Constrained-Itinerary-Generation/server
-
-### Build the Server
+Go to the server directory:
+```
+cd server/
+```
 
 Create a build directory:
-
-    mkdir build && cd build
-
+```
+mkdir build && cd build
+```
 Generate the build files using CMake:
-
-    cmake ..
-
+```
+cmake ..
+```
 Compile the project:
+```
+make
+```
 
-    make
-
-4. Start the Server
+### Start the Server:
 
 Run the compiled server executable:
-
-    ./server
-
+```
+./server
+```
+    
 The server will start and listen on http://localhost:8080.
 Debugging Tips
 
