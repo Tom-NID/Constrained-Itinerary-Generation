@@ -1,5 +1,6 @@
 #include "crow_all.h"
-#include "osm_client.h"
+#include "Graph.h"
+#include "Algo.h"
 
 // Fonction pour ajouter les en-têtes CORS
 void add_cors_headers(crow::response& res) {
@@ -34,24 +35,56 @@ int main() {
         double distance = body["distance"].d();
 
         std::cout << "Received lat: " << lat << ", lon: " << lon << ", distance: " << distance << std::endl;
+        Graph temp = Graph();
+        Graph* graph = &temp;
+        
+        // Add nodes
+        graph->addNode(0, 0, 0);
+        graph->addNode(1, 1, 1);
+        graph->addNode(2, 1, -1);
+        graph->addNode(3, 2, 0);
 
-        auto graph = get_osm_graph(lat, lon, distance);
-
-        if (graph.empty()) {
-            std::cout << "Failed to fetch OSM data" << std::endl;
-            return crow::response(500, "Failed to fetch OSM data");
-        }
-
+        // Define edge costs
+        Cost cost1(2.0);
+        Cost cost2(4.0);
+        Cost cost3(5.0);
+        Cost cost4(5.0);
+        
+        // Add edges
+        graph->addEdge(0, 1, &cost1);
+        graph->addEdge(0, 2, &cost2);
+        graph->addEdge(1, 3, &cost3);
+        graph->addEdge(2, 3, &cost4);
+        
         crow::json::wvalue response;
-        std::vector<crow::json::wvalue> nodes;
-        for (const auto& node : graph) {
-            crow::json::wvalue node_data;
-            node_data["lat"] = node.lat;
-            node_data["lon"] = node.lon;
-            nodes.push_back(node_data);
-            std::cout << node.lat << " : " << node.lon << std::endl;
-        }
 
+        std::vector<crow::json::wvalue> pathResponse;
+        std::vector<crow::json::wvalue> nodes;
+        
+        std::vector<int> path = aStar(graph, 0, 3); //Id 0 to id 3
+        
+        response["length"] = crow::json::wvalue(getPathLenght(graph, &path));
+        std::cout << std::endl <<"Path response" << std::endl;
+        
+        crow::json::wvalue node_data;
+        for (const auto& nodeId : path) {
+            crow::json::wvalue node_data;
+            std::pair<double, double> co = graph->getCoordinates(nodeId);
+            node_data["lat"] = co.first;
+            node_data["lon"] = co.second;
+            pathResponse.push_back(node_data);
+            std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
+        }
+        response["path"] = crow::json::wvalue(pathResponse);
+
+        // Send all nodes
+        for (const auto& [id,node] : graph->getNodes()) {
+            crow::json::wvalue node_data;
+            std::pair<double, double> co = graph->getCoordinates(id);
+            node_data["lat"] = co.first;
+            node_data["lon"] = co.second;
+            nodes.push_back(node_data);
+        }
         response["nodes"] = crow::json::wvalue(nodes);
 
         crow::response res(response);

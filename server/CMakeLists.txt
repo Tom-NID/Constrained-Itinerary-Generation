@@ -12,6 +12,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCES
     main.cpp
     osm_client.cpp
+    Algo.cpp
+    Cost.cpp
+    Graph.cpp
+    Node.cpp
 )
 
 # Inclure les fichiers d'en-tête

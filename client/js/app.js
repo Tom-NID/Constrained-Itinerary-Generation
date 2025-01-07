@@ -1,38 +1,82 @@
-const map = L.map('map').setView([48.8566, 2.3522], 12);
+const map = L.map('map').setView([47.2378, 6.0241], 17);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-const payload = {
-    lat: 48.8566,
-    lon: 2.3522,
-    distance: 10
-};
 
-// Log the payload
-console.log("Sending payload:", payload);
+var customLayers = L.layerGroup().addTo(map);
 
-// Send the POST request
-fetch('http://0.0.0.0:8080/route', {
-    method: 'POST',
-    body: JSON.stringify(payload) // Convert to JSON string
-})
-.then(response => {
-    console.log("Response status:", response.status); // Log the HTTP status
-    console.log("Response headers:", response.headers); // Log headers if needed
-    return response.json();
-})
-.then(data => {
-    // Log the data received from the server
-    console.log("Received response data:", data);
+map.on("click", function (e) {
+    console.log();
 
-    // Add markers to the map based on received data
-    data.nodes.forEach(node => {
-        L.circle([node.lat, node.lon], { radius: 5, color: 'blue' }).addTo(map);
-    });
-})
-.catch(error => {
-    // Log any errors during the request
-    console.error('Error during fetch:', error);
+    lat = e.latlng.lat;
+    lon = e.latlng.lng;
+    const payload = {
+        lat : lat,
+        lon : lon,
+        distance : 1000
+    }
+
+    console.log(payload);
+    
+
+    fetchData(payload);
 });
+
+function displayCircle(
+    coordinate,
+    radius,
+    color,
+    fillColor,
+    opacity,
+    fillOpacity
+) {
+    return L.circle(coordinate, {
+        radius: radius,
+        color: color,
+        fillColor: fillColor,
+        opacity: opacity,
+        fillOpacity: fillOpacity,
+    }).addTo(customLayers);
+}
+
+function displayPath(coordinates, color, opacity, length) {
+    const polyline = L.polyline(coordinates, {
+        color: color,
+        weight: 5,
+        opacity: opacity,
+    }).addTo(customLayers);
+
+    polyline.bindPopup(`${Math.floor(length)}m`);
+    polyline.openPopup();
+}
+
+function fetchData(payload) {
+    // Send the POST request
+    fetch('http://0.0.0.0:8080/route', {
+        method: 'POST',
+        body: JSON.stringify(payload) // Convert to JSON string
+    })
+    .then(response => {
+        console.log("Response status:", response.status); // Log the HTTP status
+        console.log("Response headers:", response.headers); // Log headers if needed
+        return response.json();
+    })
+    .then(data => {
+        // Log the data received from the server
+        console.log("Received response data:", data);
+
+        // Add markers to the map based on received data
+        data.nodes.forEach(node => {
+            L.circle([node.lat, node.lon], { radius: 5, color: 'blue' }).addTo(map);
+        });
+        
+        L.circle([data.nodes[0].lat, data.nodes[0].lon], { radius: 10, color: 'black' }).addTo(map);
+        displayPath(data.path, "red", 1, Number(data.length));
+    })
+    .catch(error => {
+        // Log any errors during the request
+        console.error('Error during fetch:', error);
+    });
+}
