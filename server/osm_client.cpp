@@ -2,72 +2,104 @@
 #include <curl/curl.h>
 #include <iostream>
 #include <sstream>
+#include <map>
+#include <string>
+#include <vector>
+#include <regex>
 
+// Callback function to handle the data received from CURL
 size_t write_callback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-std::vector<OSMNode> get_osm_graph(double lat, double lon, double distance) {
-    std::cout << "\n\n\nAH\n\n\n";
+// Graph structure assumed to be in your code
+Graph* get_osm_graph(double lat, double lon, double distance) {
+    Graph temp;
+    Graph* graph = &temp;
 
-    std::vector<OSMNode> nodes;
-
-    // Construire la requête Overpass API
+    // Construct the Overpass API query
     std::ostringstream query;
-    query << "[out:json];"
-          << "node(around:" << distance << "," << lat << "," << lon << ");"
+    query << "[out:xml][timeout:10];"
+          << "way(around:" << distance << "," << lat << "," << lon 
+          << ")[\"highway\"~\"^(secondary|tertiary|unclassified|residential|living_street|service|pedestrian|track|bus_guideway|escape|raceway|road|busway|footway|bridleway|cycleway|path)$\"];"
+          << "(._;>;);"
           << "out;";
     std::string url = "http://overpass-api.de/api/interpreter?data=" + query.str();
 
-    CURL* curl;
-    CURLcode res;
+    // Perform the HTTP request
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        std::cerr << "Failed to initialize CURL" << std::endl;
+        return graph;
+    }
+
     std::string response;
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-    curl = curl_easy_init();
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
 
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
+    if (res != CURLE_OK) {
+        std::cerr << "Curl request failed: " << curl_easy_strerror(res) << std::endl;
+        return graph;
+    }
+    
+    // Create regexes for extracting node and way data
+    std::regex nodeRegex(R"(<node id=\"(\d+)\" lat=\"([-+]?\d*\.\d+|\d+)\" lon=\"([-+]?\d*\.\d+|\d+)\")");
+    std::regex wayRegex(R"(<way\s+[^>]*>(.*\s*)*?<\/way>)");
+    std::regex ndRefRegex(R"(<nd\s+ref=\"(\d+)\")");
 
-        if (res != CURLE_OK) {
-            std::cerr << "Curl failed: " << curl_easy_strerror(res) << std::endl;
-            return nodes;
+    std::map<unsigned long long, int> nodeIdMap;
+    int nodeIdIndex = 0;
+
+    // Parse the nodes from the response
+    std::smatch matches;
+    std::string::const_iterator searchStart(response.cbegin());
+    while (std::regex_search(searchStart, response.cend(), matches, nodeRegex)) {
+        unsigned long long id = std::stoull(matches[1].str());
+        double nodeLat = std::stod(matches[2].str());
+        double nodeLon = std::stod(matches[3].str());
+
+        if (nodeIdMap.find(id) == nodeIdMap.end()) {
+            nodeIdMap[id] = nodeIdIndex;
+            graph->addNode(nodeIdIndex, nodeLat, nodeLon);
+            nodeIdIndex++;
         }
+
+        searchStart = matches.suffix().first;
     }
 
-    // Parse JSON de la réponse (simulé ici)
-    size_t pos = 0;
-    while ((pos = response.find("lat", pos)) != std::string::npos) { // Start searching after the previous match
-        std::cout << "ah";
+    // Parse the ways and their nodes
+    searchStart = response.cbegin();
+    while (std::regex_search(searchStart, response.cend(), matches, wayRegex)) {
+        std::string way = matches[0].str();
+
+        std::string::const_iterator wayStart(way.cbegin());
+        int previousNodeId = -1;
         
-        OSMNode node;
-        
-        // Find latitude
-        size_t start = response.find(":", pos) + 1;
-        size_t end = response.find(",", start);
-        node.lat = std::stod(response.substr(start, end - start));
+        std::smatch matchNode;
+        while (std::regex_search(wayStart, way.cend(), matchNode, ndRefRegex)) {
+            unsigned long long nodeId = std::stoull(matchNode[1].str());
 
-        // Move position past the found latitude and look for longitude
-        pos = end; // Move pos to the end of the latitude value
+            if (previousNodeId != -1 && nodeIdMap.find(previousNodeId) != nodeIdMap.end() && nodeIdMap.find(nodeId) != nodeIdMap.end()) {
+                Node node1 = graph->getNode(nodeIdMap[previousNodeId]);
+                Node node2 = graph->getNode(nodeIdMap[nodeId]);
+                Cost temp(node1.measure(node2));
+                if (!graph->addEdge(nodeIdMap[previousNodeId], nodeIdMap[nodeId], temp)) {
+                    std::cerr << "GraphAddEdge error" << std::endl;
+                }
+            }
 
-        // Find longitude
-        pos = response.find("lon", pos);  // Search for "lon" after latitude processing
-        if (pos == std::string::npos) break; // Exit loop if no "lon" is found
-        start = response.find(":", pos) + 1;
-        end = response.find("}", start);
-        node.lon = std::stod(response.substr(start, end - start));
-
-        // Add the node to the list of nodes
-        nodes.push_back(node);
-
-        // Move pos to the end of the processed longitude to continue searching
-        pos = end;
+            previousNodeId = nodeId;
+            wayStart = matchNode.suffix().first;
+        }
+    
+        searchStart = matches.suffix().first;
     }
 
-
-    return nodes;
+    std::cout << "Graph built with " << graph->countNode() << " nodes and " << graph->countEdge() << " edges." << std::endl;
+    return graph;
 }

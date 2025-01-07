@@ -66,14 +66,14 @@ std::vector<int> reconstructPath(const std::unordered_map<int, int>& cameFrom, i
     return path;
 }
 
-std::vector<int> getGoalNodes(Graph* graph, Node* center, int radius)
+std::vector<int> getGoalNodes(Graph* graph, Node center, int radius)
 {
     std::vector<int> goalNodes;
     int inaccuracy = radius / 100;
 
     while (goalNodes.size() == 0 && inaccuracy <= MAX_INACCURACY) {
         for (auto& [nodeId, node] : graph->getNodes()) {
-            double distanceToCenter = center->getCost(&node)->getDistance();
+            double distanceToCenter = center.getCost(node).getDistance();
             if (distanceToCenter <= radius + inaccuracy && distanceToCenter >= radius - inaccuracy) {
                 goalNodes.push_back(nodeId);
             }
@@ -95,7 +95,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
     gScore[startId] = 0;
 
     std::unordered_map<int, double> fScore;
-    fScore[startId] = graph->getNode(startId)->heuristic(graph->getNode(endId));
+    fScore[startId] = graph->getNode(startId).heuristic(graph->getNode(endId));
     
     std::unordered_set<int> closedSet;
 
@@ -121,7 +121,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
                 continue;
             }
 
-            double edgeDistance = edge.second->getDistance();
+            double edgeDistance = edge.second.getDistance();
             
             // Calculate tentative gScore for the neighbor
             double tentativeGScore = gScore[currentId] + edgeDistance;
@@ -136,7 +136,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
                 gScore[neighborId] = tentativeGScore;
                 
                 // Update fScore for the neighbor
-                fScore[neighborId] = gScore[neighborId] + graph->getNode(neighborId)->heuristic(graph->getNode(endId));
+                fScore[neighborId] = gScore[neighborId] + graph->getNode(neighborId).heuristic(graph->getNode(endId));
 
                 // Add the neighbor to the priority queue with its fScore as priority
                 openSet.enqueue(neighborId, fScore[neighborId]);
@@ -152,9 +152,9 @@ double getPathLenght(Graph* graph, std::vector<int>* path)
 {
     double lenght = 0.0;
     for (int i = 1; i < path->size(); ++i) {
-        Node* node1 = graph->getNode(path->at(i - 1));
-        Node* node2 = graph->getNode(path->at(i));
-        lenght += node1->getCost(node2)->getDistance();
+        Node node1 = graph->getNode(path->at(i - 1));
+        Node node2 = graph->getNode(path->at(i));
+        lenght += node1.getCost(node2).getDistance();
     }
     return lenght;
 }

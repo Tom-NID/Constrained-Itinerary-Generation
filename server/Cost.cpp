@@ -17,7 +17,7 @@ Cost::~Cost()
 
 }
 
-double Cost::getDistance()
+double Cost::getDistance() const
 {
     return m_distance;
 }

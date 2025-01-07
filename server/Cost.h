@@ -11,7 +11,7 @@ public:
     Cost();
     ~Cost();
 
-    double getDistance();
+    double getDistance() const;
      
 private:
     double m_distance;

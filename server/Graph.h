@@ -17,12 +17,12 @@ public:
 
     bool addNode(int nodeId, double lat, double lon);
     bool hasNode(int nodeId);
-    bool addEdge(int fromNodeId, int toNodeId, Cost* cost);
+    bool addEdge(int fromNodeId, int toNodeId, Cost cost);
     std::pair<double, double> getCoordinates(int nodeID) const;
 
-    Node* getNode(int nodeId);
+    Node getNode(int nodeId);
     std::map<int, Node> getNodes();
-    std::map<int, Cost*> getNeighbors(int nodeId);
+    std::map<int, Cost> getNeighbors(int nodeId);
 
     size_t countNode();
     size_t countEdge();

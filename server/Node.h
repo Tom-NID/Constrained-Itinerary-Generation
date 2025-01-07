@@ -17,20 +17,20 @@ public:
     int getId();
     double getLat();
     double getLon();
-    bool addNeighbor(Node* other, Cost* cost);
-    std::map<int, Cost*>* getNeighbors();
+    bool addNeighbor(Node other, Cost cost);
+    std::map<int, Cost> getNeighbors();
 
     size_t countEdge() const;
 
-    double heuristic(const Node* other);
-    double measure(const Node* other);
-    Cost* getCost(const Node* other);
+    double heuristic(const Node other);
+    double measure(const Node other);
+    Cost getCost(const Node other);
 
 private:
     int m_iNodeId;
     double m_dLat;
     double m_dLon;
-    std::map<int, Cost*> m_edge;
+    std::map<int, Cost> m_edge;
 };
 
 #endif // NODE_H

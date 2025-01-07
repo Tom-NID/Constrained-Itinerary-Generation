@@ -41,15 +41,15 @@ double Node::getLon()
     return m_dLon;
 }
 
-bool Node::addNeighbor(Node* other, Cost* cost)
+bool Node::addNeighbor(Node other, Cost cost)
 {
-    m_edge[other->m_iNodeId] = cost;
+    m_edge[other.m_iNodeId] = cost;
     return true; 
 }
 
-std::map<int, Cost*>* Node::getNeighbors()
+std::map<int, Cost> Node::getNeighbors()
 {
-    return &m_edge;
+    return m_edge;
 }
 
 size_t Node::countEdge() const
@@ -57,21 +57,23 @@ size_t Node::countEdge() const
     return m_edge.size();
 }
 
-double Node::heuristic(const Node* other)
+double Node::heuristic(const Node other)
 {
-    return std::sqrt(std::pow(m_dLat - other->m_dLat, 2) + std::pow(m_dLon - other->m_dLon, 2));
+    std::cout << m_dLat << m_dLon << std::endl;
+    std::cout << other.m_dLat << other.m_dLon << std::endl;
+    return std::sqrt(std::pow(m_dLat - other.m_dLat, 2) + std::pow(m_dLon - other.m_dLon, 2));
 }
 
 
-double Node::measure(const Node* other) 
+double Node::measure(const Node other) 
 {
     double R = 6378.137; // Radius of earth in KM
-    double dLat = (other->m_dLat * PI) / 180 - (m_dLat * PI) / 180;
-    double dLon = (other->m_dLon * PI) / 180 - (m_dLon * PI) / 180;
+    double dLat = (other.m_dLat * PI) / 180 - (m_dLat * PI) / 180;
+    double dLon = (other.m_dLon * PI) / 180 - (m_dLon * PI) / 180;
     double a =
         sin(dLat / 2) * sin(dLat / 2) +
         cos((m_dLat * PI) / 180) *
-            cos((other->m_dLat * PI) / 180) *
+            cos((other.m_dLat * PI) / 180) *
             sin(dLon / 2) *
             sin(dLon / 2);
     double c = 2 * atan2(std::sqrt(a), std::sqrt(1 - a));
@@ -79,11 +81,11 @@ double Node::measure(const Node* other)
     return d * 1000; // meters
 }
 
-Cost* Node::getCost(const Node* other) {
-    if (m_edge.find(other->m_iNodeId) == m_edge.end()) {
+Cost Node::getCost(const Node other) {
+    if (m_edge.find(other.m_iNodeId) == m_edge.end()) {
         // static Cost temp();
         // return &temp;
         //TODO
     }
-    return m_edge.at(other->m_iNodeId);
+    return m_edge.at(other.m_iNodeId);
 }
