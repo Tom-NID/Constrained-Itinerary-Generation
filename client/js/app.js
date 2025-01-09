@@ -68,12 +68,14 @@ function fetchData(payload) {
         console.log("Received response data:", data);
 
         // Add markers to the map based on received data
+        L.circle([data.closest.lat, data.closest.lon], { radius: 10, color: 'black' }).addTo(map);
+        displayPath(data.path, "red", 1, Number(data.length));
+        
         data.nodes.forEach(node => {
             L.circle([node.lat, node.lon], { radius: 5, color: 'blue' }).addTo(map);
         });
         
-        L.circle([data.nodes[0].lat, data.nodes[0].lon], { radius: 10, color: 'black' }).addTo(map);
-        displayPath(data.path, "red", 1, Number(data.length));
+        
     })
     .catch(error => {
         // Log any errors during the request

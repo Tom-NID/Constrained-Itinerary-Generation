@@ -3,6 +3,8 @@
 #include "Graph.h"
 #include "Algo.h"
 
+#include <random> // For generating random numbers
+
 // Fonction pour ajouter les en-têtes CORS
 void add_cors_headers(crow::response& res) {
     res.add_header("Access-Control-Allow-Origin", "*");  // Allow all origins
@@ -36,66 +38,63 @@ int main() {
         double distance = body["distance"].d();
 
         std::cout << "Received lat: " << lat << ", lon: " << lon << ", distance: " << distance << std::endl;
-        Graph temp = Graph();
-        Graph* graph = &temp;
-
-        graph = get_osm_graph(lat, lon, distance);        
-        // Add nodes
-        // graph->addNode(0, 0, 0);
-        // graph->addNode(1, 1, 1);
-        // graph->addNode(2, 1, -1);
-        // graph->addNode(3, 2, 0);
-
-        // // Define edge costs
-        // Cost cost1(2.0);
-        // Cost cost2(4.0);
-        // Cost cost3(5.0);
-        // Cost cost4(5.0);
         
-        // // Add edges
-        // graph->addEdge(0, 1, &cost1);
-        // graph->addEdge(0, 2, &cost2);
-        // graph->addEdge(1, 3, &cost3);
-        // graph->addEdge(2, 3, &cost4);
-
+        // Graph graph;
+        Graph graph = get_osm_graph(lat, lon, distance);        
+        
         Node* closestNode;
 
-        // graph->getClosestNode(lat, lon, &closestNode);
-        
-
+        graph.getClosestNode(lat, lon, &closestNode);
         
         crow::json::wvalue response;
 
         std::vector<crow::json::wvalue> pathResponse;
         std::vector<crow::json::wvalue> nodes;
         
-        // std::vector<int> path = aStar(graph, 1, 103); //Id 0 to id 3
+        // std::vector<int> path = aStar(&graph, 1, 50);
+        std::vector<int> path = getPathsAStar(graph, closestNode->getId(), 1, distance);
+        std::cout << std::endl <<"Path response" << std::endl;
 
-        // response["length"] = crow::json::wvalue(getPathLenght(graph, &path));
-        // std::cout << std::endl <<"Path response" << std::endl;
-        
-        // crow::json::wvalue node_data;
-        // for (const auto& nodeId : path) {
-        //     crow::json::wvalue node_data;
-        //     std::pair<double, double> co = graph->getCoordinates(nodeId);
-        //     node_data["lat"] = co.first;
-        //     node_data["lon"] = co.second;
-        //     pathResponse.push_back(node_data);
-        //     std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
-        // }
-        // response["path"] = crow::json::wvalue(pathResponse);
+        double length = getPathLenght(graph, path);
+        std::cout << "Length: " << std::to_string(length) << std::endl;
+        response["length"] = crow::json::wvalue(length);
+                
+        crow::json::wvalue node_data;
+        node_data["lat"] = closestNode->getLat();
+        node_data["lon"] = closestNode->getLon();
+        response["closest"] = crow::json::wvalue(node_data);
+
+        for (const auto& nodeId : path) {
+            crow::json::wvalue node_data;
+            std::pair<double, double> co = graph.getCoordinates(nodeId);
+            node_data["lat"] = co.first;
+            node_data["lon"] = co.second;
+            pathResponse.push_back(node_data);
+            // std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
+        }
+        response["path"] = crow::json::wvalue(pathResponse);
 
         // Send all nodes
-        std::cout << "GETNODES" << std::endl;
+        // std::cout << "GETNODES" << std::endl;
         
-        for (auto& [id, node] : graph->getNodes()) {
-            crow::json::wvalue node_data;
-            node_data["lat"] = node.getLat();
-            node_data["lon"] = node.getLon();
-            nodes.push_back(node_data);
-            // std::cout << "lat" << node.getLat() << "lon" << node.getLon() << std::endl;
-        }
-        response["nodes"] = crow::json::wvalue(nodes);
+        // for (auto& [id, node] : graph.getNodes()) {
+        //     if (node.getNeighbors().size() < 3) continue;
+        //     crow::json::wvalue node_data;
+        //     node_data["lat"] = node.getLat();
+        //     node_data["lon"] = node.getLon();
+        //     nodes.push_back(node_data);
+        // }
+        // response["nodes"] = crow::json::wvalue(nodes);
+
+
+        // for (auto& [id, node] : graph.getNodes()) {
+        //     if (node.getNeighbors().size() >= 3) continue;
+        //     crow::json::wvalue node_data;
+        //     node_data["lat"] = node.getLat();
+        //     node_data["lon"] = node.getLon();
+        //     nodes.push_back(node_data);
+        // }
+        // response["nodes"] = crow::json::wvalue(nodes);
 
         crow::response res(response);
         add_cors_headers(res);  // Add CORS headers for the POST request

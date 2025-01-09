@@ -5,6 +5,6 @@
 #include "Graph.h"
 
 
-Graph* get_osm_graph(double lat, double lon, double distance);
+Graph& get_osm_graph(double lat, double lon, double distance);
 
 #endif

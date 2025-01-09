@@ -14,9 +14,8 @@ size_t write_callback(void* contents, size_t size, size_t nmemb, std::string* us
 }
 
 // Graph structure assumed to be in your code
-Graph* get_osm_graph(double lat, double lon, double distance) {
-    Graph temp;
-    Graph* graph = &temp;
+Graph& get_osm_graph(double lat, double lon, double distance) {
+    static Graph graph;
 
     // Construct the Overpass API query
     std::ostringstream query;
@@ -65,10 +64,11 @@ Graph* get_osm_graph(double lat, double lon, double distance) {
 
         if (nodeIdMap.find(id) == nodeIdMap.end()) {
             nodeIdMap[id] = nodeIdIndex;
-            graph->addNode(nodeIdIndex, nodeLat, nodeLon);
+            if (!graph.addNode(nodeIdIndex, nodeLat, nodeLon)) {
+                std::cerr << "GraphAddNode error" << std::endl;
+            }
             nodeIdIndex++;
         }
-
         searchStart = matches.suffix().first;
     }
 
@@ -78,17 +78,17 @@ Graph* get_osm_graph(double lat, double lon, double distance) {
         std::string way = matches[0].str();
 
         std::string::const_iterator wayStart(way.cbegin());
-        int previousNodeId = -1;
+        unsigned long long previousNodeId = -1;
         
         std::smatch matchNode;
         while (std::regex_search(wayStart, way.cend(), matchNode, ndRefRegex)) {
             unsigned long long nodeId = std::stoull(matchNode[1].str());
 
             if (previousNodeId != -1 && nodeIdMap.find(previousNodeId) != nodeIdMap.end() && nodeIdMap.find(nodeId) != nodeIdMap.end()) {
-                Node node1 = graph->getNode(nodeIdMap[previousNodeId]);
-                Node node2 = graph->getNode(nodeIdMap[nodeId]);
+                Node node1 = graph.getNode(nodeIdMap[previousNodeId]);
+                Node node2 = graph.getNode(nodeIdMap[nodeId]);
                 Cost temp(node1.measure(node2));
-                if (!graph->addEdge(nodeIdMap[previousNodeId], nodeIdMap[nodeId], temp)) {
+                if (!graph.addEdge(nodeIdMap[previousNodeId], nodeIdMap[nodeId], temp)) {
                     std::cerr << "GraphAddEdge error" << std::endl;
                 }
             }
@@ -100,6 +100,6 @@ Graph* get_osm_graph(double lat, double lon, double distance) {
         searchStart = matches.suffix().first;
     }
 
-    std::cout << "Graph built with " << graph->countNode() << " nodes and " << graph->countEdge() << " edges." << std::endl;
+    std::cout << "Graph built with " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
     return graph;
 }

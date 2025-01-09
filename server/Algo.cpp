@@ -66,13 +66,13 @@ std::vector<int> reconstructPath(const std::unordered_map<int, int>& cameFrom, i
     return path;
 }
 
-std::vector<int> getGoalNodes(Graph* graph, Node center, int radius)
+std::vector<int> getGoalNodes(Graph& graph, const Node& center, int radius)
 {
     std::vector<int> goalNodes;
     int inaccuracy = radius / 100;
 
     while (goalNodes.size() == 0 && inaccuracy <= MAX_INACCURACY) {
-        for (auto& [nodeId, node] : graph->getNodes()) {
+        for (auto& [nodeId, node] : graph.getNodes()) {
             double distanceToCenter = center.getCost(node).getDistance();
             if (distanceToCenter <= radius + inaccuracy && distanceToCenter >= radius - inaccuracy) {
                 goalNodes.push_back(nodeId);
@@ -84,7 +84,7 @@ std::vector<int> getGoalNodes(Graph* graph, Node center, int radius)
 }
 
 // A* algorithm
-std::vector<int> aStar(Graph* graph, int startId, int endId) 
+std::vector<int> aStar(Graph& graph, int startId, int endId) 
 {
     PriorityQueue openSet;
     openSet.enqueue(startId, 0);
@@ -95,7 +95,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
     gScore[startId] = 0;
 
     std::unordered_map<int, double> fScore;
-    fScore[startId] = graph->getNode(startId).heuristic(graph->getNode(endId));
+    fScore[startId] = graph.getNode(startId).heuristic(graph.getNode(endId));
     
     std::unordered_set<int> closedSet;
 
@@ -113,7 +113,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
             return reconstructPath(cameFrom, currentId);
         }
         // Evaluate neighbors
-        for (const auto& edge : graph->getNeighbors(currentId)) {
+        for (const auto& edge : graph.getNeighbors(currentId)) {
             int neighborId = edge.first;
             // Debugging: Check if edge costs are as expected
 
@@ -136,7 +136,7 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
                 gScore[neighborId] = tentativeGScore;
                 
                 // Update fScore for the neighbor
-                fScore[neighborId] = gScore[neighborId] + graph->getNode(neighborId).heuristic(graph->getNode(endId));
+                fScore[neighborId] = gScore[neighborId] + graph.getNode(neighborId).heuristic(graph.getNode(endId));
 
                 // Add the neighbor to the priority queue with its fScore as priority
                 openSet.enqueue(neighborId, fScore[neighborId]);
@@ -148,24 +148,24 @@ std::vector<int> aStar(Graph* graph, int startId, int endId)
     return std::vector<int>();
 }
 
-double getPathLenght(Graph* graph, std::vector<int>* path)
+double getPathLenght(Graph& graph, const std::vector<int>& path)
 {
     double lenght = 0.0;
-    for (int i = 1; i < path->size(); ++i) {
-        Node node1 = graph->getNode(path->at(i - 1));
-        Node node2 = graph->getNode(path->at(i));
+    for (int i = 1; i < path.size(); ++i) {
+        Node node1 = graph.getNode(path[i - 1]);
+        Node node2 = graph.getNode(path[i]);
         lenght += node1.getCost(node2).getDistance();
     }
     return lenght;
 }
 
-std::vector<int> getPathsAStar(Graph* graph, int startId, int precision, int searchRadius)
+std::vector<int> getPathsAStar(Graph& graph, int startId, int precision, int searchRadius)
 {
     std::unordered_map<int, GoalInfo> goals;
     double ratio = 0.0;
 
     for (int i = 0; i < precision * 5; ++i) {
-        std::vector<int> goalNodes = getGoalNodes(graph, graph->getNode(startId), searchRadius);
+        std::vector<int> goalNodes = getGoalNodes(graph, graph.getNode(startId), searchRadius);
         
         double totalPathsLenght = 0;
         double totalLenght = 0;
@@ -177,7 +177,7 @@ std::vector<int> getPathsAStar(Graph* graph, int startId, int precision, int sea
 
             std::vector<int> path = aStar(graph, startId, nodeId);
             if (!path.empty()) {
-                double lenght = getPathLenght(graph, &path);
+                double lenght = getPathLenght(graph, path);
                 
                 if (goals.find(nodeId) == goals.end()) {
                     goals.insert({nodeId, GoalInfo(path, lenght)});
@@ -204,7 +204,7 @@ std::vector<int> getPathsAStar(Graph* graph, int startId, int precision, int sea
     //     sortedGoals.resize(MAX_PATHS);
     // }
     if (sortedGoals.size() > 0) {
-        return sortedGoals.at(0).second.m_path; 
+        return sortedGoals[0].second.m_path; 
     }
     return std::vector<int>();
 }

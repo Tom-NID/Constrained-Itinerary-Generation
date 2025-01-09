@@ -14,17 +14,17 @@ public:
     Node();
     ~Node();
 
-    int getId();
-    double getLat();
-    double getLon();
-    bool addNeighbor(Node other, Cost cost);
-    std::map<int, Cost> getNeighbors();
+    int getId() const;
+    double getLat() const;
+    double getLon() const;
+    bool addNeighbor(Node& other, Cost& cost);
+    std::map<int, Cost> getNeighbors() const;
 
     size_t countEdge() const;
 
-    double heuristic(const Node other);
-    double measure(const Node other);
-    Cost getCost(const Node other);
+    double heuristic(const Node& other) const;
+    double measure(const Node& other) const;
+    Cost getCost(const Node& other) const;
 
 private:
     int m_iNodeId;

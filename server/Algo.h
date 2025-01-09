@@ -7,11 +7,11 @@
 
 #include "Graph.h"
 
-std::vector<int> aStar(Graph* graph, int startId, int endId);
+std::vector<int> aStar(Graph& graph, int startId, int endId);
 
-std::vector<int> getPathsAStar(Graph* graph, int startId, int precision, int searchRadius);
+std::vector<int> getPathsAStar(Graph& graph, int startId, int precision, int searchRadius);
 
-double getPathLenght(Graph* graph, std::vector<int>* path);
+double getPathLenght(Graph& graph, const std::vector<int>& path);
 
 struct PriorityQueueElement {
     int nodeId;

@@ -26,28 +26,28 @@ Node::~Node()
 {
 }
 
-int Node::getId()
+int Node::getId() const
 {
     return m_iNodeId;
 }
 
-double Node::getLat()
+double Node::getLat() const
 {
     return m_dLat;
 }
 
-double Node::getLon()
+double Node::getLon() const
 {
     return m_dLon;
 }
 
-bool Node::addNeighbor(Node other, Cost cost)
+bool Node::addNeighbor(Node& other, Cost& cost)
 {
     m_edge[other.m_iNodeId] = cost;
     return true; 
 }
 
-std::map<int, Cost> Node::getNeighbors()
+std::map<int, Cost> Node::getNeighbors() const
 {
     return m_edge;
 }
@@ -57,15 +57,12 @@ size_t Node::countEdge() const
     return m_edge.size();
 }
 
-double Node::heuristic(const Node other)
+double Node::heuristic(const Node& other) const
 {
-    std::cout << m_dLat << m_dLon << std::endl;
-    std::cout << other.m_dLat << other.m_dLon << std::endl;
     return std::sqrt(std::pow(m_dLat - other.m_dLat, 2) + std::pow(m_dLon - other.m_dLon, 2));
 }
 
-
-double Node::measure(const Node other) 
+double Node::measure(const Node& other) const
 {
     double R = 6378.137; // Radius of earth in KM
     double dLat = (other.m_dLat * PI) / 180 - (m_dLat * PI) / 180;
@@ -81,11 +78,10 @@ double Node::measure(const Node other)
     return d * 1000; // meters
 }
 
-Cost Node::getCost(const Node other) {
+Cost Node::getCost(const Node& other) const
+{
     if (m_edge.find(other.m_iNodeId) == m_edge.end()) {
-        // static Cost temp();
-        // return &temp;
-        //TODO
+        return Cost();
     }
     return m_edge.at(other.m_iNodeId);
 }
