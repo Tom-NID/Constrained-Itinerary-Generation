@@ -21,6 +21,11 @@ bool Graph::addNode(int nodeId, double lat, double lon)
     return result.second;
 }
 
+bool Graph::removeNode(int nodeId)
+{
+    return m_nodes.erase(nodeId) > 0;
+}
+
 
 bool Graph::hasNode(int nodeId)
 {
@@ -88,7 +93,6 @@ bool Graph::getClosestNode(double lat, double lon, Node** pp_node)
     Node* closestNode = nullptr;
     double minDistance = std::numeric_limits<double>::max();
 
-    for (int i = 0; i < m_nodes.size(); ++i) 
     for (auto& [nodeId, node] : m_nodes) {
 
         double distance = node.heuristic(falseNode); 
@@ -106,4 +110,39 @@ bool Graph::getClosestNode(double lat, double lon, Node** pp_node)
 
     *pp_node = closestNode;
     return true;
+}
+
+void Graph::collapseNode()
+{
+    std::vector<int> processedNodes;
+
+    for (auto it = m_nodes.begin(); it != m_nodes.end(); ) {
+        int nodeId = it->first;
+
+        const auto& neighbors = getNeighbors(nodeId);
+        
+        for (const int i : processedNodes) {
+            if (neighbors.find(i) != neighbors.end()) {
+                if(!it->second.removeNeighbor(i)) {
+                    std::cerr << "removeNeighbor problem";
+                }
+            }
+        }
+
+        if (neighbors.size() == 2) {
+            auto neighborIt = neighbors.begin();
+            int neighbor1 = neighborIt->first;
+            double cost1 = neighborIt->second.getDistance();
+            ++neighborIt;
+            int neighbor2 = neighborIt->first;
+            double cost2 = neighborIt->second.getDistance();
+
+            addEdge(neighbor1, neighbor2, Cost(cost1 + cost2));
+
+            processedNodes.push_back(nodeId);
+            it = m_nodes.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }

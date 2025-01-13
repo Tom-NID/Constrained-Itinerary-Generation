@@ -99,6 +99,7 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
         searchStart = matches.suffix().first;
     }
 
+    graph.collapseNode();
     std::cout << "Graph built with " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
     return graph;
 }

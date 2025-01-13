@@ -81,9 +81,12 @@ function fetchData(payload) {
         if (data?.closest) {
             L.circle([data.closest.lat, data.closest.lon], { radius: 10, color: 'black' }).addTo(map);
         }
-        data.paths.forEach((path,index) => {
-            displayPath(path, getRandomColor(), 1, Number(data.length[index]));
-        })
+
+        if (data?.paths) {
+            data.paths.forEach((path,index) => {
+                displayPath(path, getRandomColor(), 1, Number(data.length[index]));
+            })
+        }
         
         if (data?.nodes) {
             data.nodes.forEach(node => {

@@ -29,9 +29,13 @@ public:
 
     bool getClosestNode(double lat, double lon, Node** node);
 
-private:
+    void collapseNode();
 
+private:
     std::map<int, Node> m_nodes;
+
+    bool removeNode(int nodeId);
+
 };
 
 #endif // GRAPH_H

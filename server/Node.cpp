@@ -47,6 +47,16 @@ bool Node::addNeighbor(Node& other, Cost& cost)
     return m_edge.insert({other.m_iNodeId, cost}).second;
 }
 
+bool Node::removeNeighbor(Node& other)
+{
+    return removeNeighbor(other.m_iNodeId);
+}
+
+bool Node::removeNeighbor(int otherId)
+{
+    return m_edge.erase(otherId) > 0;
+}
+
 std::map<int, Cost>& Node::getNeighbors()
 {
     return m_edge;
