@@ -10,6 +10,7 @@
 #include <cmath>
 #include <limits>
 #include <iostream>
+#include <algorithm>
 
 #define PI 3.14159265358979323846
 #define MAX_INACCURACY 500
@@ -54,38 +55,39 @@ public:
 };
 
 // Helper function to reconstruct the path
-std::vector<int> reconstructPath(const std::unordered_map<int, int>& cameFrom, int currentId) 
+void reconstructPath(const std::unordered_map<int, int>& cameFrom, int currentId, std::vector<int>& path) 
 {
-    std::vector<int> path;
+    path.clear();
+    int i = 0;
     while (cameFrom.find(currentId) != cameFrom.end()) {
         path.push_back(currentId);
         currentId = cameFrom.at(currentId);
     }
     path.push_back(currentId);
     std::reverse(path.begin(), path.end());
-    return path;
 }
 
-std::vector<int> getGoalNodes(Graph& graph, const Node& center, int radius)
+void getGoalNodes(Graph& graph, const Node& center, int radius, std::vector<int>& goalNodes)
 {
-    std::vector<int> goalNodes;
-    int inaccuracy = radius / 100;
+    goalNodes.clear();
+    double inaccuracy = radius / 100;
 
     while (goalNodes.size() == 0 && inaccuracy <= MAX_INACCURACY) {
         for (auto& [nodeId, node] : graph.getNodes()) {
-            double distanceToCenter = center.getCost(node).getDistance();
+            double distanceToCenter = center.measure(node);
             if (distanceToCenter <= radius + inaccuracy && distanceToCenter >= radius - inaccuracy) {
                 goalNodes.push_back(nodeId);
             }
         }
         inaccuracy *= 2;
     }
-    return goalNodes;
 }
 
 // A* algorithm
-std::vector<int> aStar(Graph& graph, int startId, int endId) 
+void aStar(Graph& graph, int startId, int endId, std::vector<int>& path) 
 {
+    path.clear();
+    
     PriorityQueue openSet;
     openSet.enqueue(startId, 0);
 
@@ -110,7 +112,8 @@ std::vector<int> aStar(Graph& graph, int startId, int endId)
 
         // If the goal is reached, reconstruct the path
         if (currentId == endId) {
-            return reconstructPath(cameFrom, currentId);
+            reconstructPath(cameFrom, currentId, path);
+            return;
         }
         // Evaluate neighbors
         for (const auto& edge : graph.getNeighbors(currentId)) {
@@ -145,10 +148,9 @@ std::vector<int> aStar(Graph& graph, int startId, int endId)
 
 
     }
-    return std::vector<int>();
 }
 
-double getPathLenght(Graph& graph, const std::vector<int>& path)
+double getPathLenght(Graph& graph, const std::vector<int> path)
 {
     double lenght = 0.0;
     for (int i = 1; i < path.size(); ++i) {
@@ -159,14 +161,19 @@ double getPathLenght(Graph& graph, const std::vector<int>& path)
     return lenght;
 }
 
-std::vector<int> getPathsAStar(Graph& graph, int startId, int precision, int searchRadius)
+void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, std::vector<std::vector<int>>& paths)
 {
+    paths.clear();
+
+    int distance = searchRadius;
     std::unordered_map<int, GoalInfo> goals;
+    std::vector<int> path;
     double ratio = 0.0;
 
+    std::vector<int> goalNodes;
     for (int i = 0; i < precision * 5; ++i) {
-        std::vector<int> goalNodes = getGoalNodes(graph, graph.getNode(startId), searchRadius);
-        
+        goalNodes.clear();
+        getGoalNodes(graph, graph.getNode(startId), searchRadius, goalNodes);
         double totalPathsLenght = 0;
         double totalLenght = 0;
 
@@ -174,8 +181,9 @@ std::vector<int> getPathsAStar(Graph& graph, int startId, int precision, int sea
         goalNodes.resize(nbCheckedNodes);
         for (int nodeId : goalNodes) {
             if (startId == nodeId) continue;
-
-            std::vector<int> path = aStar(graph, startId, nodeId);
+            path.clear();
+            aStar(graph, startId, nodeId, path);
+            
             if (!path.empty()) {
                 double lenght = getPathLenght(graph, path);
                 
@@ -197,14 +205,10 @@ std::vector<int> getPathsAStar(Graph& graph, int startId, int precision, int sea
 
     std::vector<std::pair<int, GoalInfo>> sortedGoals(goals.begin(), goals.end());
     std::sort(sortedGoals.begin(), sortedGoals.end(), [&](const auto& a, const auto b) {
-        return std::abs(a.second.m_length - searchRadius) < std::abs(b.second.m_length - searchRadius);
+        return std::abs(a.second.m_length - distance) < std::abs(b.second.m_length - distance);
     });
 
-    // if (sortedGoals.size() > MAX_PATHS) {
-    //     sortedGoals.resize(MAX_PATHS);
-    // }
-    if (sortedGoals.size() > 0) {
-        return sortedGoals[0].second.m_path; 
+    for (size_t i = 0; i < std::min(sortedGoals.size(), static_cast<size_t>(MAX_PATHS)); i++) {
+        paths.push_back(sortedGoals[i].second.m_path);   
     }
-    return std::vector<int>();
 }

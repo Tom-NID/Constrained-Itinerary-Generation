@@ -29,8 +29,7 @@ bool Graph::hasNode(int nodeId)
 
 bool Graph::addEdge(int fromNodeId, int toNodeId, Cost cost)
 {
-    m_nodes[fromNodeId].addNeighbor(m_nodes[toNodeId], cost);
-    m_nodes[toNodeId].addNeighbor(m_nodes[fromNodeId], cost);
+    m_nodes[fromNodeId].addNeighbor(m_nodes[toNodeId], cost) && m_nodes[toNodeId].addNeighbor(m_nodes[fromNodeId], cost);
     return true;
 }
 

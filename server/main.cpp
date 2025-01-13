@@ -48,34 +48,39 @@ int main() {
         
         crow::json::wvalue response;
 
-        std::vector<crow::json::wvalue> pathResponse;
-        std::vector<crow::json::wvalue> nodes;
         
         // std::vector<int> path = aStar(&graph, 1, 50);
-        std::vector<int> path = getPathsAStar(graph, closestNode->getId(), 1, distance);
+        std::vector<std::vector<int>> paths;
+        getPathsAStar(graph, closestNode->getId(), 1, distance, paths);
         std::cout << std::endl <<"Path response" << std::endl;
-
-        double length = getPathLenght(graph, path);
-        std::cout << "Length: " << std::to_string(length) << std::endl;
-        response["length"] = crow::json::wvalue(length);
-                
-        crow::json::wvalue node_data;
-        node_data["lat"] = closestNode->getLat();
-        node_data["lon"] = closestNode->getLon();
-        response["closest"] = crow::json::wvalue(node_data);
-
-        for (const auto& nodeId : path) {
-            crow::json::wvalue node_data;
-            std::pair<double, double> co = graph.getCoordinates(nodeId);
-            node_data["lat"] = co.first;
-            node_data["lon"] = co.second;
-            pathResponse.push_back(node_data);
-            // std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
+        
+        int i = 0;
+        for (auto& path : paths) { 
+            std::vector<crow::json::wvalue> pathResponse;
+            double length = getPathLenght(graph, path);
+            std::cout << "Length: " << std::to_string(length) << std::endl;
+            response["length"][i] = crow::json::wvalue(length);
+                    
+            // crow::json::wvalue node_data;
+            // node_data["lat"] = closestNode->getLat();
+            // node_data["lon"] = closestNode->getLon();
+            // response["closest"] = crow::json::wvalue(node_data);
+            
+            for (const auto& nodeId : path) {
+                crow::json::wvalue node_data;
+                std::pair<double, double> co = graph.getCoordinates(nodeId);
+                node_data["lat"] = co.first;
+                node_data["lon"] = co.second;
+                pathResponse.push_back(node_data);
+                // std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
+            }
+            response["paths"][i] = crow::json::wvalue(pathResponse);
+            ++i;
         }
-        response["path"] = crow::json::wvalue(pathResponse);
 
         // Send all nodes
         // std::cout << "GETNODES" << std::endl;
+            std::vector<crow::json::wvalue> nodes;
         
         // for (auto& [id, node] : graph.getNodes()) {
         //     if (node.getNeighbors().size() < 3) continue;

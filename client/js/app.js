@@ -4,6 +4,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
+var color = ["red", "yellow", "purple", ""]
 
 var customLayers = L.layerGroup().addTo(map);
 
@@ -23,6 +24,15 @@ map.on("click", function (e) {
 
     fetchData(payload);
 });
+
+function getRandomColor() {
+    var letters = "0123456789ABCDEF";
+    var color = "#";
+    for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
 
 function displayCircle(
     coordinate,
@@ -68,14 +78,18 @@ function fetchData(payload) {
         console.log("Received response data:", data);
 
         // Add markers to the map based on received data
-        L.circle([data.closest.lat, data.closest.lon], { radius: 10, color: 'black' }).addTo(map);
-        displayPath(data.path, "red", 1, Number(data.length));
+        if (data?.closest) {
+            L.circle([data.closest.lat, data.closest.lon], { radius: 10, color: 'black' }).addTo(map);
+        }
+        data.paths.forEach((path,index) => {
+            displayPath(path, getRandomColor(), 1, Number(data.length[index]));
+        })
         
-        data.nodes.forEach(node => {
-            L.circle([node.lat, node.lon], { radius: 5, color: 'blue' }).addTo(map);
-        });
-        
-        
+        if (data?.nodes) {
+            data.nodes.forEach(node => {
+                L.circle([node.lat, node.lon], { radius: 5, color: 'blue' }).addTo(map);
+            });
+        }
     })
     .catch(error => {
         // Log any errors during the request

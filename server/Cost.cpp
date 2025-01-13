@@ -1,6 +1,7 @@
 #include "Cost.h"
 
 #include <limits>
+#include <iostream>
 
 Cost::Cost(double distance)
 {
@@ -9,7 +10,7 @@ Cost::Cost(double distance)
 
 Cost::Cost()
 {
-    m_distance = std::numeric_limits<double>::max();
+    m_distance = -1; //std::numeric_limits<double>::max();
 }
 
 Cost::~Cost()

@@ -43,11 +43,11 @@ double Node::getLon() const
 
 bool Node::addNeighbor(Node& other, Cost& cost)
 {
-    m_edge[other.m_iNodeId] = cost;
-    return true; 
+
+    return m_edge.insert({other.m_iNodeId, cost}).second;
 }
 
-std::map<int, Cost> Node::getNeighbors() const
+std::map<int, Cost>& Node::getNeighbors()
 {
     return m_edge;
 }
@@ -81,7 +81,8 @@ double Node::measure(const Node& other) const
 Cost Node::getCost(const Node& other) const
 {
     if (m_edge.find(other.m_iNodeId) == m_edge.end()) {
-        return Cost();
+        static Cost defaultCost;
+        return defaultCost;
     }
     return m_edge.at(other.m_iNodeId);
 }

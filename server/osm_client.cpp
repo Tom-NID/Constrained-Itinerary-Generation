@@ -87,8 +87,7 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
             if (previousNodeId != -1 && nodeIdMap.find(previousNodeId) != nodeIdMap.end() && nodeIdMap.find(nodeId) != nodeIdMap.end()) {
                 Node node1 = graph.getNode(nodeIdMap[previousNodeId]);
                 Node node2 = graph.getNode(nodeIdMap[nodeId]);
-                Cost temp(node1.measure(node2));
-                if (!graph.addEdge(nodeIdMap[previousNodeId], nodeIdMap[nodeId], temp)) {
+                if (!graph.addEdge(nodeIdMap[previousNodeId], nodeIdMap[nodeId], Cost((node1.measure(node2))))) {
                     std::cerr << "GraphAddEdge error" << std::endl;
                 }
             }
