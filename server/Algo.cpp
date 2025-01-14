@@ -187,20 +187,6 @@ void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, s
             if (!path.empty()) {
                 double lenght = getPathLenght(graph, path);
                 
-                double currLength = 0.0;
-                for (size_t j = 1; j < path.size() - 1; ++j) {
-                    currLength += graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance();
-                    if (currLength >= searchRadius) {
-                        size_t index = (std::abs(searchRadius - currLength) <
-                                        std::abs(searchRadius - currLength - graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance()))
-                                           ? j
-                                           : j - 1;
-                        nodeId = path[index];
-                        path.resize(index + 1);
-                        break;
-                    }
-                }
-
                 if (goals.find(nodeId) == goals.end()) {
                     goals.insert({nodeId, GoalInfo(path, lenght)});
                 }
@@ -216,13 +202,15 @@ void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, s
             searchRadius *= ratio;
         }
     }
-
+    std::cout << distance;
     std::vector<std::pair<int, GoalInfo>> sortedGoals(goals.begin(), goals.end());
     std::sort(sortedGoals.begin(), sortedGoals.end(), [&](const auto& a, const auto b) {
         return std::abs(a.second.m_length - distance) < std::abs(b.second.m_length - distance);
     });
 
     for (size_t i = 0; i < std::min(sortedGoals.size(), static_cast<size_t>(MAX_PATHS)); i++) {
+        std::cout << sortedGoals[i].second.m_length << std::endl;
+        std::cout << getPathLenght(graph, sortedGoals[i].second.m_path) << std::endl;
         paths.push_back(sortedGoals[i].second.m_path);   
     }
 }
@@ -231,8 +219,8 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
 {
     paths.clear();
 
-    int distance = searchRadius / 2;
-
+    int halfDistance = searchRadius / 2;
+    
     std::unordered_map<int, GoalInfo> goals;
     std::vector<int> path;
     double ratio = 0.0;
@@ -240,7 +228,7 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
     std::vector<int> goalNodes;
     for (int i = 0; i < precision * 5; i++) {
         goalNodes.clear();
-        getGoalNodes(graph, graph.getNode(startId), distance, goalNodes);
+        getGoalNodes(graph, graph.getNode(startId), halfDistance, goalNodes);
 
         double totalPathsLenght = 0;
         double totalLenght = 0;
@@ -250,18 +238,8 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
             if (startId == nodeId) continue;
             path.clear();
             aStar(graph, startId, nodeId, path);
-            if (!path.empty()) {
-                double currLength = 0.0;
-                for (size_t j = 1; j < path.size() - 1; ++j) {
-                    currLength += graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance();
-                    if (currLength >= searchRadius) {
-                        size_t index = (std::abs(searchRadius - currLength) < std::abs(searchRadius - currLength - graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance())) ? j : j - 1;
-                        nodeId = path[index];
-                        path.resize(index + 1);
-                        break;
-                    }
-                }
 
+            if (!path.empty()) {
                 Graph tempGraph = graph;
                 for (size_t j = 1; j < path.size(); ++j) {
                     tempGraph.removeEdge(path[j - 1], path[j]);
@@ -281,13 +259,13 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
                 }
 
                 totalPathsLenght += lenght;
-                totalLenght += distance;
-
+                totalLenght += halfDistance;
             }
         }
         if (totalLenght != 0) {
             ratio = 1 - (totalPathsLenght - totalLenght) / totalLenght;
-            searchRadius += ratio;
+            if (ratio < 0.9) ratio = 0.9;
+            halfDistance *= ratio;
         }
     }
 
@@ -297,6 +275,7 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
     });
 
     for (size_t i = 0; i < std::min(sortedGoals.size(), static_cast<size_t>(MAX_PATHS)); i++) {
+        std::cout << sortedGoals[i].second.m_length << std::endl;
         paths.push_back(sortedGoals[i].second.m_path);   
     }
 }
