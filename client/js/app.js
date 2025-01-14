@@ -16,7 +16,8 @@ map.on("click", function (e) {
     const payload = {
         lat : lat,
         lon : lon,
-        distance : 1000
+        distance : 1000,
+        precision : 1
     }
 
     console.log(payload);

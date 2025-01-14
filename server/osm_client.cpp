@@ -46,6 +46,8 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
         return graph;
     }
     
+    std::cout << "Curl request received" << std::endl;
+
     // Create regexes for extracting node and way data
     std::regex nodeRegex(R"(<node id=\"(\d+)\" lat=\"([-+]?\d*\.\d+|\d+)\" lon=\"([-+]?\d*\.\d+|\d+)\")");
     std::regex wayRegex(R"(<way\s+[^>]*>(.*\s*)*?<\/way>)");
@@ -99,7 +101,10 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
         searchStart = matches.suffix().first;
     }
 
+    std::cout << "Graph built without optimization : " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
     graph.collapseNode();
-    std::cout << "Graph built with " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
+    std::cout << "Graph built with collapse node optimization : " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
+    graph.mergeCloseNodes();
+    std::cout << "Graph built with collapse and merge close node : " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
     return graph;
 }

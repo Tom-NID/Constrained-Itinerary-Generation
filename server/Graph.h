@@ -18,6 +18,7 @@ public:
     bool addNode(int nodeId, double lat, double lon);
     bool hasNode(int nodeId);
     bool addEdge(int fromNodeId, int toNodeId, Cost cost);
+    bool removeEdge(int fromNodeId, int toNodeId);
     std::pair<double, double> getCoordinates(int nodeID) const;
 
     Node getNode(int nodeId);
@@ -30,6 +31,7 @@ public:
     bool getClosestNode(double lat, double lon, Node** node);
 
     void collapseNode();
+    void mergeCloseNodes();
 
 private:
     std::map<int, Node> m_nodes;

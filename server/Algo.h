@@ -13,6 +13,8 @@ void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, s
 
 double getPathLenght(Graph& graph, const std::vector<int> path);
 
+void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, std::vector<std::vector<int>>& paths);
+
 struct PriorityQueueElement {
     int nodeId;
     double gScore;

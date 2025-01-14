@@ -36,6 +36,7 @@ int main() {
         double lat = body["lat"].d();
         double lon = body["lon"].d();
         double distance = body["distance"].d();
+        int precision = body["precision"].i();
 
         std::cout << "Received lat: " << lat << ", lon: " << lon << ", distance: " << distance << std::endl;
         
@@ -51,7 +52,8 @@ int main() {
         
         // std::vector<int> path = aStar(&graph, 1, 50);
         std::vector<std::vector<int>> paths;
-        getPathsAStar(graph, closestNode->getId(), 1, distance, paths);
+        // getPathsAStar(graph, closestNode->getId(), 1, distance, paths);
+        getLoopAStar(graph, closestNode->getId(), 1, distance, paths);
         std::cout << std::endl <<"Path response" << std::endl;
         
         int i = 0;

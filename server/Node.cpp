@@ -43,8 +43,12 @@ double Node::getLon() const
 
 bool Node::addNeighbor(Node& other, Cost& cost)
 {
-
     return m_edge.insert({other.m_iNodeId, cost}).second;
+}
+
+bool Node::addNeighbor(int other, Cost& cost)
+{
+    return m_edge.insert({m_iNodeId, cost}).second;
 }
 
 bool Node::removeNeighbor(Node& other)
@@ -86,6 +90,17 @@ double Node::measure(const Node& other) const
     double c = 2 * atan2(std::sqrt(a), std::sqrt(1 - a));
     double d = R * c;
     return d * 1000; // meters
+}
+
+void Node::setCost(const Node& other, Cost& cost)
+{
+    setCost(other.m_iNodeId, cost);
+}
+
+void Node::setCost(int otherId, Cost& cost)
+{
+    removeNeighbor(otherId);
+    addNeighbor(otherId, cost);
 }
 
 Cost Node::getCost(const Node& other) const

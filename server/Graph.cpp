@@ -3,8 +3,25 @@
 #include <cmath>
 #include <limits>
 #include <iostream>
+#include <unordered_set>
+#include <unordered_map>
+
+#include <utility>
+#include <functional>
+
 
 # define PI 3.14159265358979323846
+#define MIN_DISTANCE_BETWEEN_TWO_NODES 20 //m
+
+struct PairHash {
+    template <typename T1, typename T2>
+    std::size_t operator()(const std::pair<T1, T2>& p) const {
+        auto hash1 = std::hash<T1>{}(p.first);
+        auto hash2 = std::hash<T2>{}(p.second);
+        // Combine the two hashes
+        return hash1 ^ (hash2 << 1);
+    }
+};
 
 Graph::Graph()
 {
@@ -36,6 +53,11 @@ bool Graph::addEdge(int fromNodeId, int toNodeId, Cost cost)
 {
     m_nodes[fromNodeId].addNeighbor(m_nodes[toNodeId], cost) && m_nodes[toNodeId].addNeighbor(m_nodes[fromNodeId], cost);
     return true;
+}
+
+bool Graph::removeEdge(int fromNodeId, int toNodeId)
+{
+    return m_nodes[fromNodeId].removeNeighbor(toNodeId) && m_nodes[toNodeId].removeNeighbor(fromNodeId);
 }
 
 std::pair<double, double> Graph::getCoordinates(int nodeId) const
@@ -114,21 +136,12 @@ bool Graph::getClosestNode(double lat, double lon, Node** pp_node)
 
 void Graph::collapseNode()
 {
-    std::vector<int> processedNodes;
-
+    std::unordered_set<int> processedNodes;
     for (auto it = m_nodes.begin(); it != m_nodes.end(); ) {
         int nodeId = it->first;
 
         const auto& neighbors = getNeighbors(nodeId);
         
-        for (const int i : processedNodes) {
-            if (neighbors.find(i) != neighbors.end()) {
-                if(!it->second.removeNeighbor(i)) {
-                    std::cerr << "removeNeighbor problem";
-                }
-            }
-        }
-
         if (neighbors.size() == 2) {
             auto neighborIt = neighbors.begin();
             int neighbor1 = neighborIt->first;
@@ -138,11 +151,54 @@ void Graph::collapseNode()
             double cost2 = neighborIt->second.getDistance();
 
             addEdge(neighbor1, neighbor2, Cost(cost1 + cost2));
-
-            processedNodes.push_back(nodeId);
+            removeEdge(nodeId, neighbor1);
+            removeEdge(nodeId, neighbor2);
+            processedNodes.insert(nodeId);
             it = m_nodes.erase(it);
         } else {
             ++it;
+        }
+    }
+}
+
+
+void Graph::mergeCloseNodes() {
+    std::unordered_map<std::pair<int, int>, std::vector<int>, PairHash> spatialGrid;
+    constexpr double GRID_SIZE = MIN_DISTANCE_BETWEEN_TWO_NODES;
+
+    for (const auto& [nodeId, node] : m_nodes) {
+        int gridX = static_cast<int>(node.getLat() / GRID_SIZE);
+        int gridY = static_cast<int>(node.getLon() / GRID_SIZE);
+        spatialGrid[{gridX, gridY}].push_back(nodeId);
+    }
+
+    for (const auto& [gridCell, nodeIds] : spatialGrid) {
+        for (int i = 0; i < nodeIds.size(); ++i) {
+            int nodeId1 = nodeIds[i];
+            if (m_nodes.find(nodeId1) == m_nodes.end()) continue;
+
+            for (int j = i + 1; j < nodeIds.size(); ++j) {
+                int nodeId2 = nodeIds[j];
+                if (m_nodes.find(nodeId2) == m_nodes.end()) continue;
+
+                double distance = m_nodes[nodeId1].measure(m_nodes[nodeId2]);
+
+                if (distance < MIN_DISTANCE_BETWEEN_TWO_NODES) {
+                    
+                    const auto& neighbors = getNeighbors(nodeId2);
+
+                    for (const auto& edge : neighbors) {
+                        int neighborId = edge.first;
+                        double edgeCost = edge.second.getDistance();
+
+                        if (neighborId != nodeId1) {
+                            addEdge(nodeId1, neighborId, Cost(edgeCost));
+                            removeEdge(nodeId2, neighborId);
+                        }
+                    }
+                    m_nodes.erase(nodeId2);
+                }
+            }
         }
     }
 }
