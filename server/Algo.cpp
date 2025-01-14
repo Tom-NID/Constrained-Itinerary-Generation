@@ -265,7 +265,8 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
                 Graph tempGraph = graph;
                 for (size_t j = 1; j < path.size(); ++j) {
                     tempGraph.removeEdge(path[j - 1], path[j]);
-                    tempGraph.addEdge(path[j - 1], path[j], Cost(graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance() * 2));
+                    tempGraph.addEdge(path[j - 1], path[j], Cost(std::numeric_limits<double>::max()));
+                    // tempGraph.addEdge(path[j - 1], path[j], Cost(graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance() * 2));
                 }
 
                 std::vector<int> returnPath;
