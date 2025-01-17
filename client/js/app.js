@@ -4,8 +4,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-var color = ["red", "yellow", "purple", ""]
-
 var customLayers = L.layerGroup().addTo(map);
 
 map.on("click", function (e) {
@@ -16,8 +14,11 @@ map.on("click", function (e) {
     const payload = {
         lat : lat,
         lon : lon,
-        distance : 1000,
-        precision : 1
+        distance : getLength(),
+        precision : 1,
+        nbPaths : getNumberOfPaths(),
+        algo : getSelectedAlgorithm(),
+        constraints : {},
     }
 
     console.log(payload);
@@ -35,30 +36,13 @@ function getRandomColor() {
     return color;
 }
 
-function displayCircle(
-    coordinate,
-    radius,
-    color,
-    fillColor,
-    opacity,
-    fillOpacity
-) {
-    return L.circle(coordinate, {
-        radius: radius,
-        color: color,
-        fillColor: fillColor,
-        opacity: opacity,
-        fillOpacity: fillOpacity,
-    }).addTo(customLayers);
+function displayCircle(coordinate, radius, color, fillColor, opacity, fillOpacity) {
+    return L.circle(coordinate, {radius: radius, color: color, fillColor: fillColor,
+        opacity: opacity, fillOpacity: fillOpacity}).addTo(customLayers);
 }
 
 function displayPath(coordinates, color, opacity, length) {
-    const polyline = L.polyline(coordinates, {
-        color: color,
-        weight: 5,
-        opacity: opacity,
-    }).addTo(customLayers);
-
+    const polyline = L.polyline(coordinates, {color: color, weight: 5, opacity: opacity}).addTo(customLayers);
     polyline.bindPopup(`${Math.floor(length)}m`);
     polyline.openPopup();
 }
@@ -99,4 +83,24 @@ function fetchData(payload) {
         // Log any errors during the request
         console.error('Error during fetch:', error);
     });
+}
+
+function getLength() {
+    const lengthInput = document.getElementById("length");
+    return parseInt(lengthInput.value, 10);
+}
+
+function getNumberOfPaths() {
+    const nbPathsInput = document.getElementById("nbPaths");
+    return parseInt(nbPathsInput.value, 10);
+}
+
+function getSelectedAlgorithm() {
+    const algoInputs = document.getElementsByName("algo");
+    for (const input of algoInputs) {
+        if (input.checked) {
+            return input.value;
+        }
+    }
+    return "aStar";
 }

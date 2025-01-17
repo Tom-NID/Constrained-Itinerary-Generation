@@ -5,10 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenStreetMap + Backend</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style/style.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div id="map" style="height: 1200px;"></div>
+    <div id="length-wrapper">
+        <label for="length">Length (m):</label>
+        <input type="number" value="500" step="100" id="length" name="length" min="500"/>
+        &nbsp; &nbsp;
+        <label for="nbPaths">Number of paths:</label>
+        <input type="number" value="10" step="1" id="nbPaths" name="nbPaths" min="1"/>
+        &nbsp; &nbsp;
+        <br />
+        <br />
+        <div id="radio">
+            <input type="radio" id="aStar" name="algo" value="aStar" checked/>
+            <label for="aStar">A*</label>
+            <input type="radio" id="loopAStar" name="algo" value="loopAStar" />
+            <label for="loopAStar">Loop A*</label>
+        </div>
+    </div>
+    <div id="map"></div>
+
     <script src="js/app.js"></script>
 </body>
 </html>

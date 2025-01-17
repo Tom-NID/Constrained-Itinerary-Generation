@@ -2,6 +2,7 @@
 #include "crow_all.h"
 #include "Graph.h"
 #include "Algo.h"
+#include "time.h"
 
 #include <random> // For generating random numbers
 
@@ -37,62 +38,70 @@ int main() {
         double lon = body["lon"].d();
         double distance = body["distance"].d();
         int precision = body["precision"].i();
+        std::string algo = body["algo"].s();
+        
+        std::cout << "Received lat: " << lat << ", lon: " << lon << ", distance: " << distance << ", algo: " << algo << std::endl;
+        
+        Graph graph;
+        if (algo == "loopAStar") {
+            get_osm_graph(lat, lon, distance / 2, graph);        
+        } else {
+            get_osm_graph(lat, lon, distance, graph);        
+        }
 
-        std::cout << "Received lat: " << lat << ", lon: " << lon << ", distance: " << distance << std::endl;
-        
-        // Graph graph;
-        Graph graph = get_osm_graph(lat, lon, distance);        
-        
         Node* closestNode;
 
         graph.getClosestNode(lat, lon, &closestNode);
         
         crow::json::wvalue response;
 
-        
-        // std::vector<int> path = aStar(&graph, 1, 50);
         std::vector<std::vector<int>> paths;
-        // getPathsAStar(graph, closestNode->getId(), 1, distance, paths);
-        getLoopAStar(graph, closestNode->getId(), 1, distance, paths);
+
+        if (algo == "aStar") {
+            getPathsAStar(graph, closestNode->getId(), precision, distance, paths);
+        } else if (algo == "loopAStar") {
+            getLoopAStar(graph, closestNode->getId(), precision, distance, paths);   
+        } else {
+            std::cerr << "No algo from :" << body["algo"] << std::endl;
+            return crow::response(400, "Invalid Algo");
+        }
+
+
         std::cout << std::endl <<"Path response" << std::endl;
         
         int i = 0;
         for (auto& path : paths) { 
             std::vector<crow::json::wvalue> pathResponse;
             double length = getPathLenght(graph, path);
-            std::cout << "Length: " << std::to_string(length) << std::endl;
+            // std::cout << "Length: " << std::to_string(length) << std::endl;
             response["length"][i] = crow::json::wvalue(length);
                     
-            // crow::json::wvalue node_data;
-            // node_data["lat"] = closestNode->getLat();
-            // node_data["lon"] = closestNode->getLon();
-            // response["closest"] = crow::json::wvalue(node_data);
-            
             for (const auto& nodeId : path) {
                 crow::json::wvalue node_data;
                 std::pair<double, double> co = graph.getCoordinates(nodeId);
                 node_data["lat"] = co.first;
                 node_data["lon"] = co.second;
                 pathResponse.push_back(node_data);
-                // std::cout << "Id: " << nodeId << " Lat: " << co.first << " Lon: " << co.second << std::endl;
             }
             response["paths"][i] = crow::json::wvalue(pathResponse);
             ++i;
         }
+        // */
 
         // Send all nodes
-        // std::cout << "GETNODES" << std::endl;
+        /*
+        std::cout << "GETNODES" << std::endl;
             std::vector<crow::json::wvalue> nodes;
         
-        // for (auto& [id, node] : graph.getNodes()) {
-        //     if (node.getNeighbors().size() < 3) continue;
-        //     crow::json::wvalue node_data;
-        //     node_data["lat"] = node.getLat();
-        //     node_data["lon"] = node.getLon();
-        //     nodes.push_back(node_data);
-        // }
-        // response["nodes"] = crow::json::wvalue(nodes);
-
+        for (auto& [id, node] : graph.getNodes()) {
+            crow::json::wvalue node_data;
+            node_data["lat"] = node.getLat();
+            node_data["lon"] = node.getLon();
+            nodes.push_back(node_data);
+        }
+        response["nodes"] = crow::json::wvalue(nodes);
+        */
+        
 
         // for (auto& [id, node] : graph.getNodes()) {
         //     if (node.getNeighbors().size() >= 3) continue;
@@ -112,3 +121,4 @@ int main() {
     app.port(8080).multithreaded().run();
     return 0;
 }
+
