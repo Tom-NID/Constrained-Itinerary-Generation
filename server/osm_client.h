@@ -15,6 +15,6 @@
  * @param distance The radius (in meters) around the center point to fetch the graph.
  * @return A reference to a Graph object containing the nodes and edges for the specified area.
  */
-Graph& get_osm_graph(double lat, double lon, double distance);
+void get_osm_graph(double lat, double lon, double distance, Graph& graph);
 
 #endif

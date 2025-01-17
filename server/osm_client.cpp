@@ -14,9 +14,7 @@ size_t write_callback(void* contents, size_t size, size_t nmemb, std::string* us
 }
 
 // Graph structure assumed to be in your code
-Graph& get_osm_graph(double lat, double lon, double distance) {
-    static Graph graph;
-
+void get_osm_graph(double lat, double lon, double distance, Graph& graph) {
     // Construct the Overpass API query
     std::ostringstream query;
     query << "[out:xml][timeout:10];"
@@ -30,7 +28,7 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
     CURL* curl = curl_easy_init();
     if (!curl) {
         std::cerr << "Failed to initialize CURL" << std::endl;
-        return graph;
+        return;
     }
 
     std::string response;
@@ -43,7 +41,7 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
 
     if (res != CURLE_OK) {
         std::cerr << "Curl request failed: " << curl_easy_strerror(res) << std::endl;
-        return graph;
+        return;
     }
     
     std::cout << "Curl request received" << std::endl;
@@ -106,5 +104,4 @@ Graph& get_osm_graph(double lat, double lon, double distance) {
     std::cout << "Graph built with collapse node optimization : " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
     graph.mergeCloseNodes();
     std::cout << "Graph built with collapse and merge close node : " << graph.countNode() << " nodes and " << graph.countEdge() << " edges." << std::endl;
-    return graph;
 }
