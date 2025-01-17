@@ -21,7 +21,7 @@ map.on("click", function (e) {
     }
 
     console.log(payload);
-    
+    customLayers.clearLayers();
 
     fetchData(payload);
 });
