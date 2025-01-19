@@ -58,15 +58,6 @@ public:
     double getLon() const;
 
     /**
-     * @brief Adds a neighboring node with an associated cost.
-     * 
-     * @param other Reference to the neighboring node.
-     * @param cost Cost associated with the edge to the neighbor.
-     * @return true if the neighbor was successfully added, false otherwise.
-     */
-    bool addNeighbor(Node& other, Cost& cost);
-
-    /**
      * @brief Adds a neighboring node by ID with an associated cost.
      * 
      * @param other ID of the neighboring node.
@@ -74,14 +65,6 @@ public:
      * @return true if the neighbor was successfully added, false otherwise.
      */
     bool addNeighbor(int other, Cost& cost);
-
-    /**
-     * @brief Removes a neighboring node by reference.
-     * 
-     * @param other Reference to the neighboring node to be removed.
-     * @return true if the neighbor was successfully removed, false otherwise.
-     */
-    bool removeNeighbor(Node& other);
 
     /**
      * @brief Removes a neighboring node by ID.
@@ -99,14 +82,6 @@ public:
     std::map<int, Cost>& getNeighbors();
 
     /**
-     * @brief Sets the cost for an edge to a specific neighboring node.
-     * 
-     * @param other Reference to the neighboring node.
-     * @param cost New cost for the edge.
-     */
-    void setCost(const Node& other, Cost& cost);
-
-    /**
      * @brief Sets the cost for an edge to a specific neighboring node by ID.
      * 
      * @param otherId ID of the neighboring node.
@@ -117,10 +92,11 @@ public:
     /**
      * @brief Retrieves the cost of the edge to a specific neighboring node.
      * 
-     * @param other Reference to the neighboring node.
+     * @param other  The neighboring node id.
      * @return The cost of the edge.
      */
-    Cost getCost(const Node& other) const;
+    double getCost(const int other) const;
+
 
     /**
      * @brief Counts the total number of edges connected to the node.

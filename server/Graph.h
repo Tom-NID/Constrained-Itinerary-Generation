@@ -57,7 +57,7 @@ public:
      * @param cost Cost associated with the edge.
      * @return true if the edge was successfully added, false otherwise.
      */
-    bool addEdge(int fromNodeId, int toNodeId, Cost cost);
+    bool addEdge(int fromNodeId, int toNodeId, Cost& cost);
 
     /**
      * @brief Removes an edge between two nodes.
@@ -82,14 +82,14 @@ public:
      * @param nodeId Unique identifier for the node.
      * @return The node object.
      */
-    Node getNode(int nodeId);
+    Node& getNode(int nodeId);
 
     /**
      * @brief Retrieves all nodes in the graph.
      * 
      * @return A map containing all nodes, keyed by their IDs.
      */
-    std::map<int, Node> getNodes();
+    std::map<int, Node>& getNodes();
 
     /**
      * @brief Retrieves the neighbors of a given node.
@@ -97,7 +97,7 @@ public:
      * @param nodeId ID of the node.
      * @return A map containing neighbors and their associated costs.
      */
-    std::map<int, Cost> getNeighbors(int nodeId);
+    std::map<int, Cost>& getNeighbors(int nodeId);
 
     /**
      * @brief Counts the total number of nodes in the graph.

@@ -11,6 +11,8 @@
 #include <limits>
 #include <iostream>
 #include <algorithm>
+#include <time.h>
+#include <random>
 
 #define PI 3.14159265358979323846
 #define MAX_INACCURACY 500
@@ -92,61 +94,42 @@ void aStar(Graph& graph, int startId, int endId, std::vector<int>& path)
     openSet.enqueue(startId, 0);
 
     std::unordered_map<int, int> cameFrom;
-
     std::unordered_map<int, double> gScore;
-    gScore[startId] = 0;
-
     std::unordered_map<int, double> fScore;
+
+    size_t nbNodes = graph.countNode();
+    gScore.reserve(nbNodes);
+    cameFrom.reserve(nbNodes);
+    fScore.reserve(nbNodes);
+
+    gScore[startId] = 0;
     fScore[startId] = graph.getNode(startId).heuristic(graph.getNode(endId));
-    
-    std::unordered_set<int> closedSet;
 
     while (!openSet.isEmpty()) {
         int currentId = openSet.dequeue();
-
-        // If the node has already been visited
-        if (closedSet.find(currentId) != closedSet.end()) {
-            continue;
-        }
-        closedSet.insert(currentId);
 
         // If the goal is reached, reconstruct the path
         if (currentId == endId) {
             reconstructPath(cameFrom, currentId, path);
             return;
         }
+
         // Evaluate neighbors
         for (const auto& edge : graph.getNeighbors(currentId)) {
             int neighborId = edge.first;
-            // Debugging: Check if edge costs are as expected
-
-            if (closedSet.find(neighborId) != closedSet.end()) {
-                continue;
-            }
-
-            double edgeDistance = edge.second.getDistance();
-            
-            // Calculate tentative gScore for the neighbor
+            double edgeDistance = edge.second.getDistance();            
             double tentativeGScore = gScore[currentId] + edgeDistance;
             
             if (gScore.find(neighborId) == gScore.end() || tentativeGScore < gScore[neighborId]) {
-                // If this path is shorter (less costly) than the previous one to this point
-
-                // Update the path to the neighbor
-                cameFrom[neighborId] = currentId;
-
-                // Update gScore for the neighbor
-                gScore[neighborId] = tentativeGScore;
                 
-                // Update fScore for the neighbor
+                cameFrom[neighborId] = currentId;
+                gScore[neighborId] = tentativeGScore;
                 fScore[neighborId] = gScore[neighborId] + graph.getNode(neighborId).heuristic(graph.getNode(endId));
 
                 // Add the neighbor to the priority queue with its fScore as priority
                 openSet.enqueue(neighborId, fScore[neighborId]);
             }
         }
-
-
     }
 }
 
@@ -154,18 +137,20 @@ double getPathLenght(Graph& graph, const std::vector<int> path)
 {
     double lenght = 0.0;
     for (int i = 1; i < path.size(); ++i) {
-        Node node1 = graph.getNode(path[i - 1]);
-        Node node2 = graph.getNode(path[i]);
-        lenght += node1.getCost(node2).getDistance();
+        lenght += graph.getNode(path[i - 1]).getCost(path[i]);
     }
     return lenght;
 }
 
 void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, std::vector<std::vector<int>>& paths)
 {
+
     paths.clear();
 
     int distance = searchRadius;
+
+    int nbCheckedNodes = std::max(MAX_PATHS, 10) * precision;
+
     std::unordered_map<int, GoalInfo> goals;
     std::vector<int> path;
     double ratio = 0.0;
@@ -173,20 +158,30 @@ void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, s
     std::vector<int> goalNodes;
     for (int i = 0; i < precision * 5; ++i) {
         goalNodes.clear();
+        
         getGoalNodes(graph, graph.getNode(startId), searchRadius, goalNodes);
+        
         double totalPathsLenght = 0;
         double totalLenght = 0;
+        
+        std::random_device rd;
+        std::mt19937 generator(rd());
 
-        int nbCheckedNodes = std::max(MAX_PATHS, 10) * precision;
-        goalNodes.resize(nbCheckedNodes);
-        for (int nodeId : goalNodes) {
+        std::shuffle(goalNodes.begin(), goalNodes.end(), generator);
+
+        for (int j = 0; j < nbCheckedNodes; j++) {
+            int nodeId = goalNodes[i];
+
             if (startId == nodeId) continue;
-            path.clear();
-            aStar(graph, startId, nodeId, path);
             
+            path.clear();
+            
+            aStar(graph, startId, nodeId, path);
+
             if (!path.empty()) {
+
                 double lenght = getPathLenght(graph, path);
-                
+        
                 if (goals.find(nodeId) == goals.end()) {
                     goals.insert({nodeId, GoalInfo(path, lenght)});
                 }
@@ -194,25 +189,25 @@ void getPathsAStar(Graph& graph, int startId, int precision, int searchRadius, s
                 totalPathsLenght += lenght;
                 totalLenght += searchRadius;
             }
+        
         }
-
+        
         if (totalLenght != 0) {
             ratio = 1 - (totalPathsLenght - totalLenght) / totalLenght;
             if (ratio < 0.9) ratio = 0.9;
             searchRadius *= ratio;
         }
     }
-    std::cout << distance;
+
     std::vector<std::pair<int, GoalInfo>> sortedGoals(goals.begin(), goals.end());
     std::sort(sortedGoals.begin(), sortedGoals.end(), [&](const auto& a, const auto b) {
         return std::abs(a.second.m_length - distance) < std::abs(b.second.m_length - distance);
     });
 
     for (size_t i = 0; i < std::min(sortedGoals.size(), static_cast<size_t>(MAX_PATHS)); i++) {
-        std::cout << sortedGoals[i].second.m_length << std::endl;
-        std::cout << getPathLenght(graph, sortedGoals[i].second.m_path) << std::endl;
         paths.push_back(sortedGoals[i].second.m_path);   
     }
+
 }
 
 void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, std::vector<std::vector<int>>& paths)
@@ -243,8 +238,8 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
                 Graph tempGraph = graph;
                 for (size_t j = 1; j < path.size(); ++j) {
                     tempGraph.removeEdge(path[j - 1], path[j]);
-                    tempGraph.addEdge(path[j - 1], path[j], Cost(std::numeric_limits<double>::max()));
-                    // tempGraph.addEdge(path[j - 1], path[j], Cost(graph.getNode(path[j - 1]).getCost(graph.getNode(path[j])).getDistance() * 2));
+                    Cost cost(std::numeric_limits<double>::max());
+                    tempGraph.addEdge(path[j - 1], path[j], cost);
                 }
 
                 std::vector<int> returnPath;
@@ -275,7 +270,6 @@ void getLoopAStar(Graph& graph, int startId, int precision, int searchRadius, st
     });
 
     for (size_t i = 0; i < std::min(sortedGoals.size(), static_cast<size_t>(MAX_PATHS)); i++) {
-        std::cout << sortedGoals[i].second.m_length << std::endl;
         paths.push_back(sortedGoals[i].second.m_path);   
     }
 }

@@ -41,19 +41,9 @@ double Node::getLon() const
     return m_dLon;
 }
 
-bool Node::addNeighbor(Node& other, Cost& cost)
-{
-    return m_edge.insert({other.m_iNodeId, cost}).second;
-}
-
 bool Node::addNeighbor(int other, Cost& cost)
 {
-    return m_edge.insert({m_iNodeId, cost}).second;
-}
-
-bool Node::removeNeighbor(Node& other)
-{
-    return removeNeighbor(other.m_iNodeId);
+    return m_edge.insert({other, cost}).second;
 }
 
 bool Node::removeNeighbor(int otherId)
@@ -92,22 +82,16 @@ double Node::measure(const Node& other) const
     return d * 1000; // meters
 }
 
-void Node::setCost(const Node& other, Cost& cost)
-{
-    setCost(other.m_iNodeId, cost);
-}
-
 void Node::setCost(int otherId, Cost& cost)
 {
     removeNeighbor(otherId);
     addNeighbor(otherId, cost);
 }
 
-Cost Node::getCost(const Node& other) const
+double Node::getCost(const int other) const
 {
-    if (m_edge.find(other.m_iNodeId) == m_edge.end()) {
-        static Cost defaultCost;
-        return defaultCost;
+    if (m_edge.find(m_iNodeId) == m_edge.end()) {
+        return std::numeric_limits<double>::max();
     }
-    return m_edge.at(other.m_iNodeId);
+    return m_edge.at(m_iNodeId).getDistance();
 }

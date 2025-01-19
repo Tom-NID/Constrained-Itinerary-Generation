@@ -49,9 +49,9 @@ bool Graph::hasNode(int nodeId)
     return m_nodes.find(nodeId) != m_nodes.end();
 }
 
-bool Graph::addEdge(int fromNodeId, int toNodeId, Cost cost)
+bool Graph::addEdge(int fromNodeId, int toNodeId, Cost& cost)
 {
-    m_nodes[fromNodeId].addNeighbor(m_nodes[toNodeId], cost) && m_nodes[toNodeId].addNeighbor(m_nodes[fromNodeId], cost);
+    m_nodes[fromNodeId].addNeighbor(toNodeId, cost) && m_nodes[toNodeId].addNeighbor(fromNodeId, cost);
     return true;
 }
 
@@ -69,7 +69,7 @@ std::pair<double, double> Graph::getCoordinates(int nodeId) const
     return {node.getLat(), node.getLon()};
 }
 
-Node Graph::getNode(int nodeId)
+Node& Graph::getNode(int nodeId)
 {
     if (m_nodes.find(nodeId) == m_nodes.end()) {
         static Node defaultNode(-1, 0.0, 0.0); 
@@ -78,16 +78,16 @@ Node Graph::getNode(int nodeId)
     return m_nodes[nodeId];
 }
 
-std::map<int, Node> Graph::getNodes()
+std::map<int, Node>& Graph::getNodes()
 {
     return m_nodes;
 }
 
-std::map<int, Cost> Graph::getNeighbors(int nodeId)
+std::map<int, Cost>& Graph::getNeighbors(int nodeId)
 {
-    if (m_nodes.find(nodeId) == m_nodes.end()) {
-        return std::map<int, Cost>();
-    }
+    // if (m_nodes.find(nodeId) == m_nodes.end()) {
+    //     return static std::map<int, Cost>();
+    // }
     return m_nodes[nodeId].getNeighbors();
 }
 
@@ -150,7 +150,8 @@ void Graph::collapseNode()
             int neighbor2 = neighborIt->first;
             double cost2 = neighborIt->second.getDistance();
 
-            addEdge(neighbor1, neighbor2, Cost(cost1 + cost2));
+            Cost cost(cost1 + cost2);
+            addEdge(neighbor1, neighbor2, cost);
             removeEdge(nodeId, neighbor1);
             removeEdge(nodeId, neighbor2);
             processedNodes.insert(nodeId);
@@ -192,7 +193,8 @@ void Graph::mergeCloseNodes() {
                         double edgeCost = edge.second.getDistance();
 
                         if (neighborId != nodeId1) {
-                            addEdge(nodeId1, neighborId, Cost(edgeCost));
+                            Cost cost(edgeCost);
+                            addEdge(nodeId1, neighborId, cost);
                             removeEdge(nodeId2, neighborId);
                         }
                     }
