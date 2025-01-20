@@ -5,27 +5,30 @@ export default class Graph {
     }
 
     // Ajoute un nouveau node dans le graph
-    addNode(nodeId, lat, lon) {
+    addNode(nodeId, lat, lon, altitude) {
         if (!this.nodes.has(nodeId)) {
-            this.nodes.set(nodeId, [lat, lon]);
+            this.nodes.set(nodeId, [lat, lon, altitude]);
         }
     }
 
     // Ajoute un edge au graph (deux directions)
-    addEdge(nodeId1, nodeId2, cost) {
-        // if (!this.nodes.has(nodeId1)) this.addNode(nodeId1);
-        // if (!this.nodes.has(nodeId2)) this.addNode(nodeId2);
+    addEdge(nodeId1, nodeId2, cost, weightElevation = 1) {
+        const elevationDiff = this.getElevationDifference(nodeId1, nodeId2);
+        const realCost = cost + weightElevation * elevationDiff;
 
-        if (!this.edges.get(nodeId1)) this.edges.set(nodeId1, {});
-        if (!this.edges.get(nodeId2)) this.edges.set(nodeId2, {});
-
-        this.edges.get(nodeId1)[nodeId2] = cost;
-        this.edges.get(nodeId2)[nodeId1] = cost;
+        this.edges.get(nodeId1)[nodeId2] = realCost;
+        this.edges.get(nodeId2)[nodeId1] = realCost;
     }
 
     // Renvoie les coordonees d'un point a partir de son in
     getCoordinates(nodeID) {
         return this.nodes.get(nodeID);
+    }
+
+    getElevationDifference(nodeId1, nodeId2) {
+        const elevation1 = this.nodes.get(nodeId1)[2]; // Altitude
+        const elevation2 = this.nodes.get(nodeId2)[2];
+        return Math.abs(elevation1 - elevation2);
     }
 
     getNodes() {
