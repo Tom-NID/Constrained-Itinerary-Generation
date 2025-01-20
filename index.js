@@ -30,7 +30,7 @@ map.on("click", (e) => {
 
     const query = `
         [out:json][timeout:10];
-        way(around:1000,${lat},${lon})["highway"];
+        way(around:500,${lat},${lon})["highway"];
         (._;>;);
         out body;
     `;
@@ -38,6 +38,16 @@ map.on("click", (e) => {
         const nodes = processOverpassData(data);
         fetchAltitudesForNodes(nodes).then((nodesWithElevation) => {
             const startNode = findClosestNode(lat, lon, nodesWithElevation);
+
+            // Ajouter les arêtes pour connecter les nœuds
+            for (let i = 0; i < nodesWithElevation.length - 1; i++) {
+                const [lat1, lon1, id1] = nodesWithElevation[i];
+                const [lat2, lon2, id2] = nodesWithElevation[i + 1];
+
+                const distance = haversineDistance([lat1, lon1], [lat2, lon2]);
+                graph.addEdge(id1, id2, distance); // Connexion des nœuds avec un coût basé sur la distance
+            }
+
             const path = calculateBestPath(startNode, nodesWithElevation);
             if (path) {
                 console.log("Chemin calculé :", path);

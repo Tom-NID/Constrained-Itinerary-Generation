@@ -13,6 +13,12 @@ export default class Graph {
 
     // Ajoute un edge au graph (deux directions)
     addEdge(nodeId1, nodeId2, cost, weightElevation = 1) {
+        if (!this.edges.has(nodeId1)) {
+            this.edges.set(nodeId1, {});
+        }
+        if (!this.edges.has(nodeId2)) {
+            this.edges.set(nodeId2, {});
+        }
         const elevationDiff = this.getElevationDifference(nodeId1, nodeId2);
         const realCost = cost + weightElevation * elevationDiff;
 
