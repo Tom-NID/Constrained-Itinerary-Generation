@@ -85,14 +85,15 @@ map.on("click", (e) => {
 // Récupère les altitudes pour chaque noeud en groupes afin de minimiser les appels à l'API
 // Récupère les altitudes en demandant plusieurs points à la fois (50 par défaut pour limiter les appels)
 async function fetchAltitudesForNodes(nodes) {
-    const groupedNodes = groupNodesByProximity(nodes, 18);
+    const groupedNodes = groupNodesByProximity(nodes, 18); // Regroupe les nœuds par proximité
     const nodesWithElevation = [];
 
-    for (let i = 0; i < groupedNodes.length; i += 18) {
-        // Prépare les latitudes et longitudes pour l'appel groupé
-        const latitudes = groupedNodes.slice(i, i + 18).flatMap(group => group.map(node => node[0]));
-        // Longitudes des noeuds à inclure dans l'appel API
-        const longitudes = groupedNodes.slice(i, i + 18).flatMap(group => group.map(node => node[1]));
+    for (let i = 0; i < groupedNodes.length; i++) {
+        const group = groupedNodes[i];
+
+        // Prépare les latitudes et longitudes pour call API groupé
+        const latitudes = group.map(node => node[0]);
+        const longitudes = group.map(node => node[1]);
 
         try {
             const response = await makeApiRequest(
@@ -102,14 +103,14 @@ async function fetchAltitudesForNodes(nodes) {
             if (response.ok) {
                 const data = await response.json();
                 if (data.elevation) {
-                    // Traite les altitudes reçues pour chaque groupe
                     data.elevation.forEach((altitude, index) => {
-                        // Identifie le nœud correspondant à chaque altitude
-                        const groupIndex = Math.floor(index / 20);
-                        const nodeIndex = index % 20;
-                        const [lat, lon, id] = groupedNodes[groupIndex][nodeIndex];
-                        graph.addNode(id, lat, lon, altitude);
-                        nodesWithElevation.push([lat, lon, id, altitude]);
+                        if (index < group.length) {
+                            const [lat, lon, id] = group[index];
+                            graph.addNode(id, lat, lon, altitude);
+                            nodesWithElevation.push([lat, lon, id, altitude]);
+                        } else {
+                            console.warn(`Index ${index} dépasse la taille du groupe`);
+                        }
                     });
                 } else {
                     console.warn("Pas de données d'altitude reçues pour ce groupe.");
