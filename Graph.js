@@ -19,6 +19,7 @@ export default class Graph {
         if (!this.edges.has(nodeId2)) {
             this.edges.set(nodeId2, {});
         }
+
         const elevationDiff = this.getElevationDifference(nodeId1, nodeId2);
         const realCost = cost + weightElevation * elevationDiff;
 
