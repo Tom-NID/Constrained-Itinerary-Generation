@@ -85,15 +85,15 @@ map.on("click", (e) => {
 // Récupère les altitudes pour chaque noeud en groupes afin de minimiser les appels à l'API
 // Récupère les altitudes en demandant plusieurs points à la fois (50 par défaut pour limiter les appels)
 async function fetchAltitudesForNodes(nodes) {
-    const groupedNodes = groupNodesByProximity(nodes, 18); // Regroupe les nœuds par proximité
     const nodesWithElevation = [];
 
-    for (let i = 0; i < groupedNodes.length; i++) {
-        const group = groupedNodes[i];
+    // Divise les nœuds en lots de 50
+    for (let i = 0; i < nodes.length; i += 50) {
+        const batch = nodes.slice(i, i + 50);
 
-        // Prépare les latitudes et longitudes pour call API groupé
-        const latitudes = group.map(node => node[0]);
-        const longitudes = group.map(node => node[1]);
+        // Prépare les latitudes et longitudes pour l'appel groupé
+        const latitudes = batch.map(node => node[0]);
+        const longitudes = batch.map(node => node[1]);
 
         try {
             const response = await makeApiRequest(
@@ -104,16 +104,16 @@ async function fetchAltitudesForNodes(nodes) {
                 const data = await response.json();
                 if (data.elevation) {
                     data.elevation.forEach((altitude, index) => {
-                        if (index < group.length) {
-                            const [lat, lon, id] = group[index];
+                        if (index < batch.length) { // Vérifie que l'index est valide pour le lot
+                            const [lat, lon, id] = batch[index];
                             graph.addNode(id, lat, lon, altitude);
                             nodesWithElevation.push([lat, lon, id, altitude]);
                         } else {
-                            console.warn(`Index ${index} dépasse la taille du groupe`);
+                            console.warn(`Index ${index} dépasse la taille du lot`);
                         }
                     });
                 } else {
-                    console.warn("Pas de données d'altitude reçues pour ce groupe.");
+                    console.warn("Pas de données d'altitude reçues pour ce lot.");
                 }
             } else {
                 console.error("Erreur API Open-Meteo :", response.status);
@@ -129,6 +129,7 @@ async function fetchAltitudesForNodes(nodes) {
     console.log("Nœuds traités :", nodesWithElevation);
     return nodesWithElevation;
 }
+
 
 // Trouve le nœud le plus proche d'un point donné (lat, lon)
 function findClosestNode(lat, lon, nodes) {
