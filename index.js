@@ -20,7 +20,7 @@ var customLayers = L.layerGroup().addTo(map);
 let lat = 0;
 let lng = 0;
 
-let radius = 1000;
+let radius = 5000;
 let elevation = parseInt(document.getElementById("elevation").value); // rayon du cercle de recherche
 let MAX_PATHS = parseInt(document.getElementById("nbChemins").value); // nombre de chemins a generer
 let precision = parseInt(document.getElementById("precision-slider").value); // delai entre l'affichage de deux routes (ms)
@@ -340,12 +340,14 @@ function getCircuitAStar(startingNode, precision, searchRadius) {
 }
 
 async function processData(data) {
+    console.time("Processing Data");
     const use_astar = document.getElementById("aStar").checked;
     const use_circuit = document.getElementById("circuit").checked;
     const searchRadius = use_circuit ? radius / 2 : radius;
     const intersection_mode = document.getElementById("intersection").checked ? 2 : 1;
     const nodeWayCounts = new Map();
 
+    console.time("Node Counting");
     data.elements.forEach((element) => {
         if (element.type === "way") {
             element.nodes.forEach((nodeId) => {
@@ -354,24 +356,32 @@ async function processData(data) {
             });
         }
     });
+    console.timeEnd("Node Counting");
 
+    console.time("Graph Nodes Addition");
     data.elements.forEach((element) => {
         if (nodeWayCounts.get(element.id) >= intersection_mode)
             graph.addNode(element.id, element.lat, element.lon);
     });
+    console.timeEnd("Graph Nodes Addition");
 
+    console.time("Fetch Altitudes");
     const allNodes = Array.from(graph.nodes.values());
     const nodesWithElevation = await fetchAltitudesForNodes(
         allNodes.map((node) => [node.latitude, node.longitude, node.id])
     );
+    console.timeEnd("Fetch Altitudes");
 
+    console.time("Assign Elevations");
     nodesWithElevation.forEach(([lat, lon, id, altitude]) => {
         const node = graph.nodes.get(id);
         if (node) {
             node.altitude = altitude;
         }
     });
+    console.timeEnd("Assign Elevations");
 
+    console.time("Add Edges to Graph");
     data.elements.forEach((element) => {
         if (element.type === "way") {
             const nodes = element.nodes.filter(
@@ -383,12 +393,15 @@ async function processData(data) {
             }
         }
     });
+    console.timeEnd("Add Edges to Graph");
 
     if (graph.getSize() === 0) {
         alert("No roads found");
+        console.timeEnd("Processing Data");
         return;
     }
 
+    console.time("Find Starting Node");
     let minDistance = Infinity;
     let startingNode = null;
 
@@ -401,10 +414,13 @@ async function processData(data) {
             startingNode = nodeID;
         }
     }
+    console.timeEnd("Find Starting Node");
 
     const elevationConstraint = parseInt(document.getElementById("elevation").value);
 
     if (use_astar) {
+        console.log("Starting A* Algorithm");
+        console.time("A* Algorithm");
         const paths = getPathsAStar(startingNode, precision, elevationConstraint);
         for (let path of paths) {
             const coordinates = path[1].path.map((nodeID) => {
@@ -415,7 +431,9 @@ async function processData(data) {
             displayPath(coordinates, getRandomColor(), 0.7, path[1].length);
             await sleep(delay);
         }
+        console.timeEnd("A* Algorithm");
     }
+    console.timeEnd("Processing Data");
 }
 
 // Fonction pour estimer le cout d'un node par rapport a un autre
@@ -552,7 +570,7 @@ function getPathElevationGain(graph, path) {
 async function fetchAltitudesForNodes(nodes) {
     const nodesWithElevation = [];
 
-    // Diviser les nodes en lots de 100
+    // Diviser les nodes en lots de 100 (max autorisé par l'API)
     const batchSize = 100;
     const batches = [];
     for (let i = 0; i < nodes.length; i += batchSize) {
@@ -564,27 +582,56 @@ async function fetchAltitudesForNodes(nodes) {
             const latitudes = batch.map(node => node[0]);
             const longitudes = batch.map(node => node[1]);
 
-            const response = await fetch(
-                `https://api.open-meteo.com/v1/elevation?latitude=${latitudes.join(",")}&longitude=${longitudes.join(",")}`
-            );
-            console.log("api call");
+            console.log(`Fetching elevation data for batch of size: ${batch.length}`);
+            console.time(`Batch Fetch Time for size ${batch.length}`);
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.elevation) {
-                    data.elevation.forEach((altitude, index) => {
-                        const [lat, lon, id] = batch[index];
-                        nodesWithElevation.push([lat, lon, id, altitude]);
-                    });
+            let response;
+            let success = false;
+            let attempt = 0;
+            let delay = 100; // delay de 20ms initialement
+
+            // Backoff pour les 429, augmentation exponentielle du delay
+            while (!success && attempt < 5) {
+                try {
+                    response = await fetch(
+                        `https://api.open-meteo.com/v1/elevation?latitude=${latitudes.join(",")}&longitude=${longitudes.join(",")}`
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.elevation) {
+                            data.elevation.forEach((altitude, index) => {
+                                const [lat, lon, id] = batch[index];
+                                nodesWithElevation.push([lat, lon, id, altitude]);
+                            });
+                        }
+                        success = true;
+                    } else if (response.status === 429) {
+                        console.log(`429 Too Many Requests: Retrying in ${delay}ms...`);
+                        await sleep(delay);
+                        delay *= 2; // backoff
+                        attempt++;
+                    } else {
+                        console.error("API Error:", response.status);
+                        break;
+                    }
+                } catch (err) {
+                    console.error("Network error during fetch:", err);
+                    break;
                 }
-            } else {
-                console.error("API Error:", response.status);
             }
+
+            if (!success) {
+                console.error("Failed to fetch elevation data after multiple attempts.");
+            }
+
+            console.timeEnd(`Batch Fetch Time for size ${batch.length}`);
         }
     } catch (error) {
         console.error("Error fetching altitudes:", error);
     }
 
+    console.log(`Total nodes with elevation fetched: ${nodesWithElevation.length}`);
     return nodesWithElevation;
 }
 
