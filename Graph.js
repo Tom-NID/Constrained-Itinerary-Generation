@@ -4,27 +4,23 @@ export default class Graph {
         this.edges = new Map();
     }
 
-    // Ajoute un nouveau node dans le graph
-    addNode(nodeId, lat, lon, altitude) {
-        if (!this.nodes.has(nodeId)) {
-            this.nodes.set(nodeId, [lat, lon, altitude]);
-        }
+    addNode(id, latitude, longitude, altitude = 0) {
+        this.nodes.set(id, { id, latitude, longitude, altitude });
+        this.edges.set(id, []);
     }
 
-    // Ajoute un edge au graph (deux directions)
-    addEdge(nodeId1, nodeId2, cost, weightElevation = 1) {
-        if (!this.edges.has(nodeId1)) {
-            this.edges.set(nodeId1, {});
-        }
-        if (!this.edges.has(nodeId2)) {
-            this.edges.set(nodeId2, {});
+    addEdge(node1, node2) {
+        if (!this.nodes.has(node1) || !this.nodes.has(node2)) {
+            throw new Error("One or both nodes do not exist.");
         }
 
-        const elevationDiff = this.getElevationDifference(nodeId1, nodeId2);
-        const realCost = cost + weightElevation * elevationDiff;
+        const altitudeDifference = Math.abs(this.nodes.get(node1).altitude - this.nodes.get(node2).altitude);
+        this.edges.get(node1).push({ node: node2, weight: altitudeDifference });
+        this.edges.get(node2).push({ node: node1, weight: altitudeDifference });
+    }
 
-        this.edges.get(nodeId1)[nodeId2] = realCost;
-        this.edges.get(nodeId2)[nodeId1] = realCost;
+    getNeighbors(nodeId) {
+        return this.edges.get(nodeId);
     }
 
     // Renvoie les coordonees d'un point a partir de son in
@@ -32,19 +28,8 @@ export default class Graph {
         return this.nodes.get(nodeID);
     }
 
-    getElevationDifference(nodeId1, nodeId2) {
-        const elevation1 = this.nodes.get(nodeId1)[2]; // Altitude
-        const elevation2 = this.nodes.get(nodeId2)[2];
-        return Math.abs(elevation1 - elevation2);
-    }
-
     getNodes() {
         return this.nodes.keys();
-    }
-
-    // Renvoie une liste des voisins d'un node
-    getNeighbors(nodeId) {
-        return Object.keys(this.edges.get(nodeId)) || [];
     }
 
     // Renvoie le cout entre deux nodes
