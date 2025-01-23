@@ -20,8 +20,8 @@ var customLayers = L.layerGroup().addTo(map);
 let lat = 0;
 let lng = 0;
 
-let radius = 5000;
-let elevation = parseInt(document.getElementById("elevation").value); // rayon du cercle de recherche
+let radius = 1500;
+let elevation = parseInt(document.getElementById("elevation").value); // contrainte de dénivelé
 let MAX_PATHS = parseInt(document.getElementById("nbChemins").value); // nombre de chemins a generer
 let precision = parseInt(document.getElementById("precision-slider").value); // delai entre l'affichage de deux routes (ms)
 
@@ -340,10 +340,11 @@ function getCircuitAStar(startingNode, precision, searchRadius) {
 }
 
 async function processData(data) {
-    console.time("Processing Data");
+    console.time("Process Data");
+
     const use_astar = document.getElementById("aStar").checked;
-    const use_circuit = document.getElementById("circuit").checked;
-    const searchRadius = use_circuit ? radius / 2 : radius;
+    const use_dfs = document.getElementById("dfs").checked;
+    const searchRadius = radius;
     const intersection_mode = document.getElementById("intersection").checked ? 2 : 1;
     const nodeWayCounts = new Map();
 
@@ -396,8 +397,9 @@ async function processData(data) {
     console.timeEnd("Add Edges to Graph");
 
     if (graph.getSize() === 0) {
+        console.error("No roads found in graph.");
         alert("No roads found");
-        console.timeEnd("Processing Data");
+        console.timeEnd("Process Data");
         return;
     }
 
@@ -418,22 +420,25 @@ async function processData(data) {
 
     const elevationConstraint = parseInt(document.getElementById("elevation").value);
 
-    if (use_astar) {
-        console.log("Starting A* Algorithm");
-        console.time("A* Algorithm");
-        const paths = getPathsAStar(startingNode, precision, elevationConstraint);
+    if (use_dfs) {
+        console.log("Starting DFS Exploration");
+        console.time("DFS Exploration");
+        const paths = dfsExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+
         for (let path of paths) {
-            const coordinates = path[1].path.map((nodeID) => {
+            const coordinates = path.path.map((nodeID) => {
                 const node = graph.getCoordinates(nodeID);
                 return [node.latitude, node.longitude];
             });
 
-            displayPath(coordinates, getRandomColor(), 0.7, path[1].length);
+            displayPath(coordinates, getRandomColor(), 0.7, path.elevation);
+            console.log(`DFS Path displayed with elevation: ${path.elevation}`);
             await sleep(delay);
         }
-        console.timeEnd("A* Algorithm");
+        console.timeEnd("DFS Exploration");
     }
-    console.timeEnd("Processing Data");
+
+    console.timeEnd("Process Data");
 }
 
 // Fonction pour estimer le cout d'un node par rapport a un autre
@@ -442,6 +447,18 @@ function heuristic(node1, node2) {
     return Math.abs(
         graph.getCoordinates(node1).altitude - graph.getCoordinates(node2).altitude
     );
+}
+
+function getElevationGain(graph, path) {
+    let elevationGain = 0;
+    for (let i = 1; i < path.length; i++) {
+        const elevationDiff =
+            Math.abs(
+                graph.getCoordinates(path[i]).altitude - graph.getCoordinates(path[i - 1]).altitude
+            );
+        elevationGain += elevationDiff;
+    }
+    return elevationGain;
 }
 
 function aStar(graph, start, goal, heuristic) {
@@ -577,18 +594,17 @@ async function fetchAltitudesForNodes(nodes) {
         batches.push(nodes.slice(i, i + batchSize));
     }
 
+    console.log("Start fetch altitude");
+
     try {
         for (const batch of batches) {
             const latitudes = batch.map(node => node[0]);
             const longitudes = batch.map(node => node[1]);
 
-            console.log(`Fetching elevation data for batch of size: ${batch.length}`);
-            console.time(`Batch Fetch Time for size ${batch.length}`);
-
             let response;
             let success = false;
             let attempt = 0;
-            let delay = 100; // delay de 20ms initialement
+            let delay = 500; // delay de 20ms initialement
 
             // Backoff pour les 429, augmentation exponentielle du delay
             while (!success && attempt < 5) {
@@ -625,7 +641,6 @@ async function fetchAltitudesForNodes(nodes) {
                 console.error("Failed to fetch elevation data after multiple attempts.");
             }
 
-            console.timeEnd(`Batch Fetch Time for size ${batch.length}`);
         }
     } catch (error) {
         console.error("Error fetching altitudes:", error);
@@ -633,6 +648,43 @@ async function fetchAltitudesForNodes(nodes) {
 
     console.log(`Total nodes with elevation fetched: ${nodesWithElevation.length}`);
     return nodesWithElevation;
+}
+
+function dfsExplore(graph, startNode, elevationConstraint, maxPaths) {
+    let paths = [];
+    let stack = [[startNode, [startNode], 0]]; // [currentNode, pathSoFar, currentElevationGain]
+
+    while (stack.length > 0 && paths.length < maxPaths) {
+        let [currentNode, pathSoFar, currentElevationGain] = stack.pop();
+
+        // Vérifier si le chemin respecte la contrainte d'élévation
+        if (currentElevationGain >= elevationConstraint) {
+            if (
+                Math.abs(currentElevationGain - elevationConstraint) <= elevationConstraint * 0.1 // Tolérance de 10%
+            ) {
+                paths.push({ path: pathSoFar, elevation: currentElevationGain });
+            }
+            continue; // Ne pas continuer l'exploration après avoir atteint la contrainte
+        }
+
+        // Explorer les voisins
+        for (let { node: neighbor, weight } of graph.getNeighbors(currentNode)) {
+            if (!pathSoFar.includes(neighbor)) { // Éviter les cycles
+                const elevationGain =
+                    Math.abs(
+                        graph.getCoordinates(neighbor).altitude - graph.getCoordinates(currentNode).altitude
+                    );
+                stack.push([
+                    neighbor,
+                    [...pathSoFar, neighbor],
+                    currentElevationGain + elevationGain,
+                ]);
+            }
+        }
+    }
+
+    // Trier les chemins par leur longueur pour une cohérence visuelle
+    return paths.sort((a, b) => a.elevation - b.elevation);
 }
 
 // Distance entre deux points en metres
