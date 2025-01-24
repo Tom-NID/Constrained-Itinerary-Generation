@@ -11,89 +11,107 @@
   </head>
   <body>
     <div class="control-panel">
-      <div class="control-group">
-        <label>Length (meters)</label>
-        <input
-          type="range"
-          id="length"
-          min="500"
-          max="50000"
-          step="100"
-          value="500"
-        />
-        <div class="value-display"><span id="lengthValue">500</span>m</div>
-      </div>
+      <div class="control-content">
+        <div class="control-group">
+          <label>Length (meters)</label>
+          <input
+            type="range"
+            id="length"
+            min="500"
+            max="50000"
+            step="100"
+            value="500"
+          />
+          <div class="value-display"><span id="lengthValue">500</span>m</div>
+        </div>
 
-      <div class="control-group">
-        <label>Number of Paths</label>
-        <input type="range" id="paths" min="1" max="10" step="1" value="1" />
-        <div class="value-display"><span id="pathsValue">1</span></div>
-      </div>
+        <div class="control-group">
+          <label>Number of Paths</label>
+          <input type="range" id="paths" min="1" max="10" step="1" value="1" />
+          <div class="value-display"><span id="pathsValue">1</span></div>
+        </div>
 
-      <div class="control-group">
-        <div class="toggle-container">
-          <label>Intersection Mode</label>
-          <label class="switch">
-            <input type="checkbox" id="intersection" />
-            <span class="slider"></span>
-          </label>
+        <div class="control-group">
+          <label>Simplification Mode</label>
+          <div class="simplification-container">
+            <button class="simplification-btn active" data-mode="full">
+              Full
+            </button>
+            <button class="simplification-btn" data-mode="intersection">
+              Intersection
+            </button>
+            <button class="simplification-btn" data-mode="way-simplification">
+              Way Simplification
+            </button>
+            <button class="simplification-btn" data-mode="graph-simplification">
+              Graph Simplification
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Method</label>
+          <div class="method-container">
+            <button class="method-btn active" data-method="path">Path</button>
+            <button class="method-btn" data-method="circuit">Circuit</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Terrain Surface</label>
+          <div class="terrain-container">
+            <input
+              type="checkbox"
+              id="hard"
+              class="terrain-checkbox"
+              value="hard"
+            />
+            <label for="hard" class="terrain-label">Hard</label>
+
+            <input
+              type="checkbox"
+              id="semi-hard"
+              class="terrain-checkbox"
+              value="semi-hard"
+            />
+            <label for="semi-hard" class="terrain-label">Semi-hard</label>
+
+            <input
+              type="checkbox"
+              id="semi-soft"
+              class="terrain-checkbox"
+              value="semi-soft"
+            />
+            <label for="semi-soft" class="terrain-label">Semi-soft</label>
+
+            <input
+              type="checkbox"
+              id="soft"
+              class="terrain-checkbox"
+              value="soft"
+            />
+            <label for="soft" class="terrain-label">Soft</label>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Delay (ms)</label>
+          <input
+            type="range"
+            id="delay"
+            min="0"
+            max="1000"
+            step="50"
+            value="0"
+          />
+          <div class="value-display"><span id="delayValue">0</span>ms</div>
         </div>
       </div>
 
-      <div class="control-group">
-        <label>Method</label>
-        <div class="method-container">
-          <button class="method-btn active" data-method="path">Path</button>
-          <button class="method-btn" data-method="circuit">Circuit</button>
-        </div>
+      <div class="generate-btn-container">
+        <button id="generate" class="generate-btn">Generate</button>
       </div>
-
-      <div class="control-group">
-        <label>Terrain Surface</label>
-        <div class="terrain-container">
-          <input
-            type="checkbox"
-            id="hard"
-            class="terrain-checkbox"
-            value="hard"
-          />
-          <label for="hard" class="terrain-label">Hard</label>
-
-          <input
-            type="checkbox"
-            id="semi-hard"
-            class="terrain-checkbox"
-            value="semi-hard"
-          />
-          <label for="semi-hard" class="terrain-label">Semi-hard</label>
-
-          <input
-            type="checkbox"
-            id="semi-soft"
-            class="terrain-checkbox"
-            value="semi-soft"
-          />
-          <label for="semi-soft" class="terrain-label">Semi-soft</label>
-
-          <input
-            type="checkbox"
-            id="soft"
-            class="terrain-checkbox"
-            value="soft"
-          />
-          <label for="soft" class="terrain-label">Soft</label>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <label>Delay (ms)</label>
-        <input type="range" id="delay" min="0" max="1000" step="50" value="0" />
-        <div class="value-display"><span id="delayValue">0</span>ms</div>
-      </div>
-
-      <button id="generate" class="generate-btn">Generate</button>
     </div>
-
     <div class="map" id="map"></div>
 
     <div class="side-panel" id="sidePanel">

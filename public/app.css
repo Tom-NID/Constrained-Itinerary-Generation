@@ -17,19 +17,35 @@
   top: 20px;
   right: 20px;
   background: white;
-  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   width: 280px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  max-height: 800px;
   z-index: 1000;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
-    sans-serif;
+}
+
+.control-content {
+  overflow-y: auto;
+  padding: 20px;
+  flex-grow: 1;
+}
+
+.generate-btn-container {
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #e9ecef;
+  border-radius: 0 0 8px 8px;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .control-group {
   margin-bottom: 16px;
 }
-
 label {
   display: block;
   margin-bottom: 8px;
@@ -178,6 +194,30 @@ input:checked + .slider:before {
 
 .terrain-checkbox:checked + .terrain-label:hover {
   background: #0056b3;
+}
+
+/* Simplification mode styling */
+.simplification-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.simplification-btn {
+  padding: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 14px;
+}
+
+.simplification-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
 }
 
 /*  */

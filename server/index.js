@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import Graph from "./models/Graph.js";
 import Node from "./models/Node.js";
+import MapSimplifier from "./utils/MapSimplifier.js";
 
 // Get the current directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -27,60 +28,56 @@ app.get("/", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "../../public/app.html"));
 });
 
-function getGraph(
-  graph,
-  ways,
-  nodeWayCounts,
-  intersectionSize,
-  ultraSimple = false
-) {
-  let idToCoo = new Map();
-
+function getGraph(graph, ways, nodeWayCounts, simplificationMode, queryData) {
   let addedNodes = new Set();
+  let intersectionSize = 1;
+  let simplificationFactor = 50;
+
+  // way-simplification
   let oldToNew = new Map();
   let toReplace = new Set();
 
-  ways.forEach((element) => {
-    // toReplace.clear();
+  // graph-simplification
+  let mapSimplifier = null;
+  let correspondanceMap = null;
 
+  if (simplificationMode !== "full") {
+    intersectionSize = 2;
+  }
+
+  if (simplificationMode === "graph-simplification") {
+    mapSimplifier = new MapSimplifier(
+      queryData.radius * 2,
+      simplificationFactor,
+      {
+        lat: queryData.startingPoint.lat,
+        lon: queryData.startingPoint.lng,
+      }
+    );
+  }
+
+  // let cacaCounter = 0;
+
+  ways.forEach((element) => {
     if (element.type === "node") {
       if (nodeWayCounts.get(element.id) >= intersectionSize) {
-        // if (ultraSimple && graph.countNodes() > 1) {
-        //   const closestNode = graph.getClosestNode(element.lat, element.lon);
-        //   const distance = graph.getHaversineDistance(-1, closestNode, {
-        //     lat: element.lat,
-        //     lon: element.lon,
-        //   });
-        //   if (distance >= 10) {
-        //     graph.addNode(element.id, element.lat, element.lon);
-        //   }
-        // } else {
-        //   graph.addNode(element.id, element.lat, element.lon);
-        // }
-
-        // if (ultraSimple) {
-        //   if (graph.countNodes() > 1) {
-        //     const closestNode = graph.getClosestNode(element.lat, element.lon);
-        //     const distance = graph.getHaversineDistance(-1, closestNode, {
-        //       lat: element.lat,
-        //       lon: element.lon,
-        //     });
-        //     if (distance >= 10) {
-        //       graph.addNode(element.id, element.lat, element.lon);
-        //     }
-        //   } else {
-        //     graph.addNode(element.id, element.lat, element.lon);
-        //   }
-        // } else {
         graph.addNode(element.id, element.lat, element.lon);
-        idToCoo.set(element.id, { lat: element.lat, lon: element.lon });
-        // }
-      }
 
-      // element.nodes = element.nodes.filter(
-      //   (nodeId) => nodeWayCounts.get(nodeId) >= intersectionSize
-      // );
+        if (simplificationMode === "graph-simplification") {
+          mapSimplifier.addPoint(element.lat, element.lon, element.id);
+        }
+      }
     }
+  });
+
+  if (simplificationMode === "graph-simplification") {
+    console.time("graph simplification");
+    mapSimplifier.simplify();
+    correspondanceMap = mapSimplifier.getCorrespondanceMap();
+    console.timeEnd("graph simplification");
+  }
+
+  ways.forEach((element) => {
     if (element.type === "way") {
       let surface = element.tags.surface;
       let highway = element.tags.highway;
@@ -171,23 +168,14 @@ function getGraph(
           nodeWayCounts.get(nodeId) >= intersectionSize && graph.hasNode(nodeId)
       );
 
-      if (ultraSimple) {
+      if (simplificationMode === "way-simplification") {
         let prev = element.nodes[0];
         for (let i = 1; i < element.nodes.length; i++) {
           let curr = element.nodes[i];
 
-          // let closestNode = graph.getClosestNodeById(curr);
-          // let distToClosest = graph.getHaversineDistance(closestNode, curr);
-
           if (oldToNew.has(curr)) {
             curr = oldToNew.get(curr);
           }
-          // else if (oldToNew.has(closestNode) && distToClosest < 10) {
-          //   curr = oldToNew.get(closestNode);
-          // } else if (distToClosest < 10) {
-          //   curr = closestNode;
-          //   oldToNew.set(curr, closestNode);
-          // }
 
           const distance = graph.getHaversineDistance(curr, prev);
 
@@ -205,7 +193,7 @@ function getGraph(
             break;
           }
 
-          if (distance >= 20) {
+          if (distance >= simplificationFactor) {
             for (let nodeId of toReplace) {
               oldToNew.set(nodeId, prev);
             }
@@ -221,29 +209,36 @@ function getGraph(
         }
       } else {
         for (let i = 0; i < element.nodes.length - 1; i++) {
-          const nodeId1 = element.nodes[i];
-          const nodeId2 = element.nodes[i + 1];
+          let nodeId1 = element.nodes[i];
+          let nodeId2 = element.nodes[i + 1];
+
+          if (simplificationMode === "graph-simplification") {
+            nodeId1 = correspondanceMap.get(nodeId1);
+            nodeId2 = correspondanceMap.get(nodeId2);
+          }
+
           graph.addEdge(nodeId1, nodeId2, surface);
           graph.addEdge(nodeId2, nodeId1, surface);
+          addedNodes.add(nodeId1);
+          addedNodes.add(nodeId2);
         }
       }
     }
   });
-  if (ultraSimple) {
-    for (let nodeId of graph.getNodes()) {
-      if (!addedNodes.has(nodeId)) {
-        graph.removeNode(nodeId);
-      }
+  for (let nodeId of graph.getNodes()) {
+    if (!addedNodes.has(nodeId)) {
+      graph.removeNode(nodeId);
     }
   }
-  console.log(addedNodes.size);
 }
 
 async function processData(
   data,
+  queryData,
   fullGraph,
-  simplifiedGraph,
-  ultraSimplifiedGraph
+  intersectionGraph,
+  waySimplifiedGraph,
+  simplifiedGraph
 ) {
   const nodeWayCounts = new Map();
 
@@ -259,17 +254,43 @@ async function processData(
   });
   console.timeEnd("Comptage relations nodes");
 
-  console.time("Creation du graph complet");
-  getGraph(fullGraph, data.elements, nodeWayCounts, 1);
-  console.timeEnd("Creation du graph complet");
-  console.time("Creation du graph simple");
-  getGraph(simplifiedGraph, data.elements, nodeWayCounts, 2);
-  console.timeEnd("Creation du graph simple");
-  console.time("Creation du graph ultra simple");
-  getGraph(ultraSimplifiedGraph, data.elements, nodeWayCounts, 2, true);
-  // ultraSimplifiedGraph.simplifyGraph(1000);
-  console.timeEnd("Creation du graph ultra simple");
-  // ultraSimplifiedGraph = simplifiedGraph.clone();
+  // console.log("simplification: ", queryData.simplificationMode);
+
+  if (queryData.simplificationMode === "full") {
+    console.time("Full graph");
+    getGraph(fullGraph, data.elements, nodeWayCounts, "full", queryData);
+    console.timeEnd("Full graph");
+  } else if (queryData.simplificationMode === "intersection") {
+    console.time("Intersection graph");
+    getGraph(
+      intersectionGraph,
+      data.elements,
+      nodeWayCounts,
+      "intersection",
+      queryData
+    );
+    console.timeEnd("Intersection graph");
+  } else if (queryData.simplificationMode === "way-simplification") {
+    console.time("Way-simplification graph");
+    getGraph(
+      waySimplifiedGraph,
+      data.elements,
+      nodeWayCounts,
+      "way-simplification",
+      queryData
+    );
+    console.timeEnd("Way-simplification graph");
+  } else {
+    console.time("Graph-simplification graph");
+    getGraph(
+      simplifiedGraph,
+      data.elements,
+      nodeWayCounts,
+      "graph-simplification",
+      queryData
+    );
+    console.timeEnd("Graph-simplification graph");
+  }
 
   console.log(
     "full: \n\tnodes: ",
@@ -279,23 +300,25 @@ async function processData(
   );
 
   console.log(
-    "simplified: \n\tnodes: ",
+    "intersection: \n\tnodes: ",
+    intersectionGraph.countNodes(),
+    "\n\tedges: ",
+    intersectionGraph.countEdges()
+  );
+
+  console.log(
+    "way-simplification: \n\tnodes: ",
+    waySimplifiedGraph.countNodes(),
+    "\n\tedges: ",
+    waySimplifiedGraph.countEdges()
+  );
+
+  console.log(
+    "graph-simplification: \n\tnodes: ",
     simplifiedGraph.countNodes(),
     "\n\tedges: ",
     simplifiedGraph.countEdges()
   );
-
-  console.log(
-    "ultra simplified: \n\tnodes: ",
-    ultraSimplifiedGraph.countNodes(),
-    "\n\tedges: ",
-    ultraSimplifiedGraph.countEdges()
-  );
-
-  // if (fullGraph.countNodes() == 0 || simplifiedGraph.countNodes() == 0) {
-  //   // TODO return error
-  //   return;
-  // }
 }
 
 /**
@@ -304,9 +327,11 @@ async function processData(
  */
 async function fetchData(
   query,
+  queryData,
   fullGraph,
-  simplifiedGraph,
-  ultraSimplifiedGraph
+  intersectionGraph,
+  waySimplifiedGraph,
+  simplifiedGraph
 ) {
   try {
     const result = await fetch("https://overpass-api.de/api/interpreter", {
@@ -315,7 +340,14 @@ async function fetchData(
     });
 
     const data = await result.json();
-    processData(data, fullGraph, simplifiedGraph, ultraSimplifiedGraph);
+    processData(
+      data,
+      queryData,
+      fullGraph,
+      intersectionGraph,
+      waySimplifiedGraph,
+      simplifiedGraph
+    );
   } catch (err) {
     console.error("Error: ", err);
   }
@@ -331,13 +363,14 @@ io.on("connection", function (socket) {
   let maxPaths = 0;
   let method = "";
   let terrain = [];
-  let intersectionMode = false;
+  let simplificationMode = "";
 
   // data
   let graph = new Graph();
   let fullGraph = new Graph();
+  let intersectionGraph = new Graph();
+  let waySimplifiedGraph = new Graph();
   let simplifiedGraph = new Graph();
-  let ultraSimplifiedGraph = new Graph();
   let startingNodeId = -1;
 
   socket.on("request", async (data) => {
@@ -350,8 +383,9 @@ io.on("connection", function (socket) {
       data.startingPoint.lng != originLng
     ) {
       fullGraph.clear();
+      intersectionGraph.clear();
+      waySimplifiedGraph.clear();
       simplifiedGraph.clear();
-      ultraSimplifiedGraph.clear();
       const query =
         "data=" +
         encodeURIComponent(`
@@ -360,33 +394,48 @@ io.on("connection", function (socket) {
             (._;>;);
             out body;
           `);
-      await fetchData(query, fullGraph, simplifiedGraph, ultraSimplifiedGraph);
+
+      let queryData = {
+        radius: data.radius,
+        startingPoint: data.startingPoint,
+        simplificationMode: data.simplificationMode,
+      };
+
+      await fetchData(
+        query,
+        queryData,
+        fullGraph,
+        intersectionGraph,
+        waySimplifiedGraph,
+        simplifiedGraph
+      );
     }
 
-    intersectionMode = data.intersectionMode;
+    simplificationMode = data.simplificationMode;
 
     // socket.emit("graph", {
     //   color: "blue",
-    //   coordinates: simplifiedGraph.getAllNodesCoordinates(),
+    //   coordinates: intersectionGraph.getAllNodesCoordinates(),
     // });
 
-    // console.log(ultraSimplifiedGraph);
+    if (simplificationMode === "full") {
+      graph = fullGraph.clone();
+    } else if (simplificationMode === "intersection") {
+      graph = intersectionGraph.clone();
+    } else if (simplificationMode === "way-simplification") {
+      graph = waySimplifiedGraph.clone();
+    } else {
+      graph = simplifiedGraph.clone();
+    }
 
     // socket.emit("graph", {
     //   color: "red",
-    //   nodes: ultraSimplifiedGraph.getAllNodesCoordinates(),
-    //   edges: ultraSimplifiedGraph.getAllEdgesCoordinates(),
+    //   nodes: graph.getAllNodesCoordinates(),
+    //   edges: graph.getAllEdgesCoordinates(),
     // });
 
-    console.log(
-      "ultra simplified: \n\tnodes: ",
-      ultraSimplifiedGraph.countNodes(),
-      "\n\tedges: ",
-      ultraSimplifiedGraph.countEdges()
-    );
-
-    graph = intersectionMode ? simplifiedGraph.clone() : fullGraph.clone();
-    // graph = ultraSimplifiedGraph.clone();
+    // graph = simplificationMode ? intersectionGraph.clone() : fullGraph.clone();
+    // graph = waySimplifiedGraph.clone();
 
     console.log(
       "graph: \n\tnodes: ",
@@ -401,7 +450,6 @@ io.on("connection", function (socket) {
     startingNodeId = graph.getClosestNode(originLat, originLng);
 
     method = data.method;
-    // console.log(terrain);
 
     searchRadius = data.radius;
     maxSearchRadius = Math.max(searchRadius, maxSearchRadius);
@@ -429,14 +477,14 @@ io.on("connection", function (socket) {
       );
     }
 
+    // console.log(paths);
+
     paths = paths.map((path) => ({
       path: path[1].path,
       length: path[1].length,
       endingNode: graph.getNodeCoordinates(parseInt(path[0])),
     }));
     console.timeEnd("Generation paths");
-
-    // console.log(paths);
 
     socket.emit("result", {
       startingNode: graph.getNodeCoordinates(startingNodeId),

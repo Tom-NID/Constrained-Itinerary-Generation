@@ -26,6 +26,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Simplification mode selection
+  const simplificationBtns = document.querySelectorAll(".simplification-btn");
+  simplificationBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      simplificationBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
   // Initialisation de la map centree sur Besancon
   const map = L.map("map").setView([47.2378, 6.0241], 10);
 
@@ -57,9 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const radius = parseInt(document.getElementById("length").value);
     const maxPaths = parseInt(document.getElementById("paths").value);
-    const intersection = document.getElementById("intersection").checked;
+    const simplification = document.querySelector(".simplification-btn.active")
+      .dataset.mode;
     const method = document.querySelector(".method-btn.active").dataset.method;
-    console.log(radius, maxPaths, intersection, method);
+    console.log(radius, maxPaths, simplification, method);
   });
 
   // Generate button click handler
@@ -71,19 +81,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const radius = parseInt(document.getElementById("length").value);
     const maxPaths = parseInt(document.getElementById("paths").value);
-    const intersection = document.getElementById("intersection").checked;
+    const simplification = document.querySelector(".simplification-btn.active")
+      .dataset.mode;
     const method = document.querySelector(".method-btn.active").dataset.method;
     const terrain = Array.from(
       document.querySelectorAll(".terrain-checkbox:checked")
     ).map((checkbox) => checkbox.value);
-    console.log(radius, maxPaths, intersection, method);
+    console.log(radius, maxPaths, simplification, method);
 
     sock.emit("request", {
       startingPoint: { lat: lat, lng: lng },
       radius: radius,
       maxPaths: maxPaths,
       precision: 1,
-      intersectionMode: intersection,
+      simplificationMode: simplification,
       method: method,
       terrain: terrain,
     });
@@ -129,13 +140,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   sock.on("graph", (graph) => {
     // console.log(coordinates);
-    console.log(graph);
+    // console.log(graph);
     // for (let coo of graph.nodes) {
     //   displayCircle(coo, 3, graph.color, graph.color, 1, 0.3);
     // }
     for (let coo of graph.edges) {
       displayPath(coo, graph.color, 0.3, -1);
     }
+  });
+
+  sock.on("correspondanceMap", (correspondanceMap) => {
+    console.log(correspondanceMap);
   });
 
   /**
