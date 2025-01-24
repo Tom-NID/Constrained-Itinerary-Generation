@@ -532,7 +532,7 @@ export default class Graph {
       inaccuracy = inaccuracy < 25 ? 25 : inaccuracy;
 
       let goalNodes = this.getGoalNodes(startingNodeId, searchRadius);
-      shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
+      // shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
 
       let totalPathsLength = 0;
       let totalLength = 0;
