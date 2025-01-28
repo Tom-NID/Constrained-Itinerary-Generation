@@ -256,11 +256,12 @@ async function processData(
 
   // console.log("simplification: ", queryData.simplificationMode);
 
-  if (queryData.simplificationMode === "full") {
-    console.time("Full graph");
-    getGraph(fullGraph, data.elements, nodeWayCounts, "full", queryData);
-    console.timeEnd("Full graph");
-  } else if (queryData.simplificationMode === "intersection") {
+  // if (queryData.simplificationMode === "full") {
+  console.time("Full graph");
+  getGraph(fullGraph, data.elements, nodeWayCounts, "full", queryData);
+  console.timeEnd("Full graph");
+  // }
+  if (queryData.simplificationMode === "intersection") {
     console.time("Intersection graph");
     getGraph(
       intersectionGraph,
@@ -280,7 +281,7 @@ async function processData(
       queryData
     );
     console.timeEnd("Way-simplification graph");
-  } else {
+  } else if (queryData.simplificationMode === "graph-simplification") {
     console.time("Graph-simplification graph");
     getGraph(
       simplifiedGraph,
@@ -481,10 +482,39 @@ io.on("connection", function (socket) {
 
     paths = paths.map((path) => ({
       path: path[1].path,
-      pathSurface: path[1].pathSurface,
+      // pathSurface: path[1].pathSurface,
       length: path[1].length,
       endingNode: graph.getNodeCoordinates(parseInt(path[0])),
     }));
+
+    // Reconstruct the paths based on the full graph
+    // TODO remove dead ends
+    if (simplificationMode !== "full") {
+      paths.forEach((path) => {
+        let completePath = [];
+        let partialPath = path.path;
+        for (let i = 1; i < partialPath.length; ++i) {
+          completePath.push(
+            ...fullGraph
+              .aStar(partialPath[i - 1], partialPath[i], terrain)
+              .slice(1)
+          );
+        }
+        let pathSurface = [];
+        for (let i = 1; i < completePath.length; ++i) {
+          // console.log(completePath[i - 1], completePath[i]);
+          pathSurface.push(
+            fullGraph.getSurfaceType(completePath[i - 1], completePath[i])
+          );
+        }
+        completePath = completePath.map((nodeId) =>
+          fullGraph.getNodeCoordinates(nodeId)
+        );
+        path.path = completePath;
+        path.pathSurface = pathSurface;
+      });
+    }
+
     console.timeEnd("Generation paths");
 
     socket.emit("result", {

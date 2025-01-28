@@ -332,7 +332,7 @@ export default class Graph {
     return totalPath;
   }
 
-  aStar(start, goal, heuristic, terrain) {
+  aStar(start, goal, terrain) {
     // Queue de priorite pour les nodes a evaluer
     let openSet = new PriorityQueue();
     openSet.enqueue(start, 0);
@@ -460,12 +460,7 @@ export default class Graph {
       const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
 
       for (let nodeId of goalNodes.slice(0, nbCheckedNodes)) {
-        let path = this.aStar(
-          startingNodeId,
-          nodeId,
-          this.getHaversineCost.bind(this),
-          terrain
-        );
+        let path = this.aStar(startingNodeId, nodeId, terrain);
         if (path) {
           let length = this.getPathLength(path);
 
@@ -486,16 +481,16 @@ export default class Graph {
             }
           }
           if (!paths[nodeId]) {
-            let pathSurface = [];
-            for (let k = 1; k < path.length; ++k) {
-              pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
-            }
-            path = path.map((nodeId) =>
-              this.#nodes.get(nodeId).getCoordinates()
-            );
+            // let pathSurface = [];
+            // for (let k = 1; k < path.length; ++k) {
+            //   pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
+            // }
+            // path = path.map((nodeId) =>
+            //   this.#nodes.get(nodeId).getCoordinates()
+            // );
             paths[nodeId] = {
               path: path,
-              pathSurface: pathSurface,
+              // pathSurface: pathSurface,
               length: currLength,
             };
           }
@@ -548,12 +543,7 @@ export default class Graph {
       const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
 
       for (let nodeId of goalNodes.slice(0, nbCheckedNodes)) {
-        let path = this.aStar(
-          startingNodeId,
-          nodeId,
-          this.getHaversineCost.bind(this),
-          terrain
-        );
+        let path = this.aStar(startingNodeId, nodeId, terrain);
 
         if (path) {
           // Reduit le path pour ne concerver que les nodes necessaires a une distance proche du searchRadius
@@ -584,12 +574,7 @@ export default class Graph {
           }
 
           // Chemin du retour
-          const returnPath = this.aStar(
-            startingNodeId,
-            nodeId,
-            this.getHaversineCost.bind(this),
-            terrain
-          );
+          const returnPath = this.aStar(startingNodeId, nodeId, terrain);
 
           for (let i = 1; i < path.length; ++i) {
             this.setHaversineCost(
@@ -608,16 +593,16 @@ export default class Graph {
           let length = this.getPathLength(path);
 
           if (!paths[nodeId]) {
-            let pathSurface = [];
-            for (let k = 1; k < path.length; ++k) {
-              pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
-            }
-            path = path.map((nodeId) =>
-              this.#nodes.get(nodeId).getCoordinates()
-            );
+            // let pathSurface = [];
+            // for (let k = 1; k < path.length; ++k) {
+            //   pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
+            // }
+            // path = path.map((nodeId) =>
+            //   this.#nodes.get(nodeId).getCoordinates()
+            // );
             paths[nodeId] = {
               path: path,
-              pathSurface: pathSurface,
+              // pathSurface: pathSurface,
               length: currLength,
             };
           }
