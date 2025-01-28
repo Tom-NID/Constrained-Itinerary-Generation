@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   sock.on("result", (res) => {
-    // console.log(res);
+    console.log(res);
     const method = document.querySelector(".method-btn.active").dataset.method;
     const radius = parseInt(document.getElementById("length").value);
 

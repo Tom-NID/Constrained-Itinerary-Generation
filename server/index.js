@@ -481,6 +481,7 @@ io.on("connection", function (socket) {
 
     paths = paths.map((path) => ({
       path: path[1].path,
+      pathSurface: path[1].pathSurface,
       length: path[1].length,
       endingNode: graph.getNodeCoordinates(parseInt(path[0])),
     }));

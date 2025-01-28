@@ -486,10 +486,18 @@ export default class Graph {
             }
           }
           if (!paths[nodeId]) {
+            let pathSurface = [];
+            for (let k = 1; k < path.length; ++k) {
+              pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
+            }
             path = path.map((nodeId) =>
               this.#nodes.get(nodeId).getCoordinates()
             );
-            paths[nodeId] = { path: path, length: currLength };
+            paths[nodeId] = {
+              path: path,
+              pathSurface: pathSurface,
+              length: currLength,
+            };
           }
 
           totalPathsLength += length;
@@ -600,12 +608,17 @@ export default class Graph {
           let length = this.getPathLength(path);
 
           if (!paths[nodeId]) {
+            let pathSurface = [];
+            for (let k = 1; k < path.length; ++k) {
+              pathSurface.push(this.getSurfaceType(path[k - 1], path[k]));
+            }
             path = path.map((nodeId) =>
               this.#nodes.get(nodeId).getCoordinates()
             );
             paths[nodeId] = {
               path: path,
-              length: length,
+              pathSurface: pathSurface,
+              length: currLength,
             };
           }
 
