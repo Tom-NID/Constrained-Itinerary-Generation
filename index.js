@@ -479,6 +479,7 @@ async function processData(data) {
     }
 
     if (use_bfs) {
+        executionTime = [];
         // Permet plusieurs mesures à la fois pour performances
         for(let i = 0; i < nbfois; i++){
             paths = null;
@@ -491,6 +492,7 @@ async function processData(data) {
         }
         console.log(`BFS Exploration: Moyenne: ${average(executionTime)} ms`);
 
+        console.log("Process "+paths);
         for (let path of paths) {
             const coordinates = path.path.map((nodeID) => {
                 const node = graph.getCoordinates(nodeID);
@@ -503,6 +505,7 @@ async function processData(data) {
     }
 
     if (use_randomwalk) {
+        executionTime = [];
         for(let i = 0; i < nbfois; i++){
             paths = null;
             console.time("Random Exploration");
@@ -775,68 +778,69 @@ function dfsExplore(graph, startNode, elevationConstraint, maxPaths) {
 
 function bfsExplore(graph, startNode, elevationConstraint, maxPaths) {
     let paths = [];
-    let queue = [[startNode, [startNode], 0]]; // [currentNode, pathSoFar, currentElevationGain]
+    let queue = [{ node: startNode, path: [startNode], elevation: 0 }];
+    let visited = new Set();
 
     while (queue.length > 0 && paths.length < maxPaths) {
-        let [currentNode, pathSoFar, currentElevationGain] = queue.shift(); // FIFO
+        let { node, path, elevation } = queue.shift(); // Retirer le premier élément (FIFO) base de BFS
 
-        // Vérifier si la contrainte atteinte
-        if (currentElevationGain >= elevationConstraint) {
-            if (Math.abs(currentElevationGain - elevationConstraint) <= elevationConstraint * 0.1) { // Tolérance
-                paths.push({ path: pathSoFar, elevation: currentElevationGain });
+        // Vérifier la contrainte
+        if (elevation >= elevationConstraint) {
+            if (Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) { // Tolérance de 10%
+                paths.push({ path, elevation });
             }
             continue;
         }
 
-        // Explorer les voisins
-        for (let { node: neighbor, weight } of graph.getNeighbors(currentNode)) {
-            if (!pathSoFar.includes(neighbor)) { // Éviter les boucles
-                const elevationGain =
-                    Math.abs(graph.getCoordinates(neighbor).altitude - graph.getCoordinates(currentNode).altitude);
-                queue.push([
-                    neighbor,
-                    [...pathSoFar, neighbor],
-                    currentElevationGain + elevationGain,
-                ]);
+        // Voisins
+        for (let { node: neighbor, weight } of graph.getNeighbors(node)) {
+            if (!visited.has(neighbor)) { // Cycles
+                visited.add(neighbor);
+                const elevationGain = Math.abs(graph.getCoordinates(neighbor).altitude - graph.getCoordinates(node).altitude);
+                queue.push({
+                    node: neighbor,
+                    path: [...path, neighbor],
+                    elevation: elevation + elevationGain,
+                });
             }
         }
     }
 
-    return paths.sort((a, b) => a.elevation - b.elevation);
+    return paths.sort((a, b) => a.elevation - b.elevation); // Trier par dénivelé
 }
 
-function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths) {
+function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxSteps = 1000) {
     let paths = [];
-    let iterations = 10000; // nb de parcours "random"
 
-    for (let i = 0; i < iterations && paths.length < maxPaths; i++) {
-        let currentNode = startNode;
-        let pathSoFar = [currentNode];
-        let currentElevationGain = 0;
+    for (let i = 0; i < maxPaths; i++) {
+        let current = startNode;
+        let path = [current];
+        let elevation = 0;
+        let steps = 0;
 
-        while (currentElevationGain < elevationConstraint) {
-            let neighbors = graph.getNeighbors(currentNode);
+        while (elevation < elevationConstraint && steps < maxSteps) {
+            let neighbors = graph.getNeighbors(current);
             if (neighbors.length === 0) break;
 
-            let randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)].node;
-            if (pathSoFar.includes(randomNeighbor)) continue; // Éviter les boucle
+            // Sélectionne un voisin au hasard
+            let next = neighbors[Math.floor(Math.random() * neighbors.length)].node;
 
-            const elevationGain =
-                Math.abs(graph.getCoordinates(randomNeighbor).altitude - graph.getCoordinates(currentNode).altitude);
+            // Vérifie que l'ajout respecte la contrainte d'élévation
+            let elevationGain = Math.abs(graph.getCoordinates(next).altitude - graph.getCoordinates(current).altitude);
+            if (elevation + elevationGain > elevationConstraint) break;
 
-            pathSoFar.push(randomNeighbor);
-            currentElevationGain += elevationGain;
-            currentNode = randomNeighbor;
+            elevation += elevationGain;
+            path.push(next);
+            current = next;
+            steps++;
+        }
 
-            // Si contrainte atteinte
-            if (Math.abs(currentElevationGain - elevationConstraint) <= elevationConstraint * 0.1) {
-                paths.push({ path: pathSoFar, elevation: currentElevationGain });
-                break;
-            }
+        if (Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) { // Tolérance de 10%
+            paths.push({ path, elevation });
         }
     }
 
-    return paths.sort((a, b) => a.elevation - b.elevation);
+    return paths.sort((a, b) => a.elevation - b.elevation); // Trie les chemins par dénivelé
 }
 
 // Distance entre deux points en metres
