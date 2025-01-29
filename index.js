@@ -20,6 +20,7 @@ var customLayers = L.layerGroup().addTo(map);
 let lat = 0;
 let lng = 0;
 let dataFetched = false; // Pour l'instant, util uniquement pour les tests de performance afin de pas refetch la meme zone, pas applicable en situation réelle.
+let executionTime = [];
 
 let nbfois = parseInt(document.getElementById("nbfois").value);
 let radius = parseInt(document.getElementById("radius").value);
@@ -453,13 +454,18 @@ async function processData(data) {
     }
 
     if (use_dfs) {
+        executionTime = [];
         // Permet plusieurs mesures à la fois pour performances
-        for(let i = 0; i >= nbfois; i++){
+        for(let i = 0; i < nbfois; i++){
             paths = null;
             console.time("DFS Exploration");
+            let startTime = performance.now();
             paths = dfsExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            let endTime = performance.now();
             console.timeEnd("DFS Exploration");
+            executionTime.push(endTime - startTime);
         }
+        console.log(`DFS Exploration: Moyenne: ${average(executionTime)} ms`);
 
         for (let path of paths) {
             const coordinates = path.path.map((nodeID) => {
@@ -474,12 +480,16 @@ async function processData(data) {
 
     if (use_bfs) {
         // Permet plusieurs mesures à la fois pour performances
-        for(let i = 0; i >= nbfois; i++){
+        for(let i = 0; i < nbfois; i++){
             paths = null;
             console.time("BFS Exploration");
+            let startTime = performance.now();
             paths = bfsExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            let endTime = performance.now();
             console.timeEnd("BFS Exploration");
+            executionTime.push(endTime - startTime);
         }
+        console.log(`BFS Exploration: Moyenne: ${average(executionTime)} ms`);
 
         for (let path of paths) {
             const coordinates = path.path.map((nodeID) => {
@@ -493,12 +503,16 @@ async function processData(data) {
     }
 
     if (use_randomwalk) {
-        for(let i = 0; i >= nbfois; i++){
+        for(let i = 0; i < nbfois; i++){
             paths = null;
-            console.time("RandomWalk Exploration");
+            console.time("Random Exploration");
+            let startTime = performance.now();
             paths = randomWalkExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
-            console.timeEnd("RandomWalk Exploration");
+            let endTime = performance.now();
+            console.timeEnd("Random Exploration");
+            executionTime.push(endTime - startTime);
         }
+        console.log(`Random Exploration: Moyenne: ${average(executionTime)} ms`);
 
         for (let path of paths) {
             const coordinates = path.path.map((nodeID) => {
@@ -510,8 +524,6 @@ async function processData(data) {
             await sleep(delay);
         }
     }
-
-    console.timeEnd("Process Data");
 }
 
 // Fonction pour estimer le cout d'un node par rapport a un autre
@@ -918,4 +930,10 @@ function shuffle(array) {
             array[currentIndex],
         ];
     }
+}
+
+// Calcule de la moyenne d'un tableau
+function average(timesArray) {
+    if (timesArray.length === 0) return 0;
+    return timesArray.reduce((a, b) => a + b, 0) / timesArray.length;
 }
