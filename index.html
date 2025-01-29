@@ -33,6 +33,28 @@
             aria-label="Nombre de chemins à générer"
     />
 
+    <label for="radius">Rayon de recherche (m) :</label>
+    <input
+            type="number"
+            id="radius"
+            name="radius"
+            value="1500"
+            step="100"
+            min="100"
+            aria-label="Rayon en mètres"
+    />
+
+    <label for="nbfois">Rayon de recherche (m) :</label>
+    <input
+            type="number"
+            id="nbfois"
+            name="nbfois"
+            value="1"
+            step="1"
+            min="1"
+            aria-label="Nombre d'occurence"
+    />
+
     <!-- Mode Intersection -->
     <input type="checkbox" id="intersection" name="intersection" />
     <label for="intersection">Mode intersection</label>
@@ -45,6 +67,12 @@
 
         <input type="radio" id="dfs" name="algorithm" value="dfs" checked />
         <label for="dfs">DFS</label>
+
+        <input type="radio" id="bfs" name="algorithm" value="bfs" />
+        <label for="bfs">BFS</label>
+
+        <input type="radio" id="randomWalk" name="algorithm" value="randomWalk" />
+        <label for="randomWalk">Random Walk</label>
 
         <input type="radio" id="boucle" name="algorithm" value="boucle" />
         <label for="boucle">Boucle</label>
