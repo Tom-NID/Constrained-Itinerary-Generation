@@ -9,6 +9,10 @@
   "dependencies": {
     "express": "^4.21.2",
     "node": "^22.13.0",
+    "sass": "^1.35.2",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
   }
 }

@@ -1,0 +1,15 @@
+@mixin center () {
+    margin: auto;
+    justify-content: center;
+    text-align: center;
+    align-items: center;
+}
+
+@mixin button() {
+    background-image: url('../asset/button.png');
+    background-size: 100% 100%;
+    color: $color_2;
+    animation: spring 300ms ease-out;
+    text-shadow: 0 -1px 0 $text_shadow;
+    font-weight: bold;
+}
