@@ -1,119 +1,97 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Constrained Itinerary Generation</title>
-    <meta charset="utf-8" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
-    />
-    <link rel="stylesheet" href="app.css" />
-  </head>
-  <body>
-    <div class="control-panel">
-      <div class="control-group">
-        <label>Length (meters)</label>
-        <input
-          type="range"
-          id="length"
-          min="500"
-          max="50000"
-          step="100"
-          value="500"
-        />
-        <div class="value-display"><span id="lengthValue">500</span>m</div>
-      </div>
-
-      <div class="control-group">
-        <label>Number of Paths</label>
-        <input type="range" id="paths" min="1" max="10" step="1" value="1" />
-        <div class="value-display"><span id="pathsValue">1</span></div>
-      </div>
-
-      <div class="control-group">
-        <div class="toggle-container">
-          <label>Intersection Mode</label>
-          <label class="switch">
-            <input type="checkbox" id="intersection" />
-            <span class="slider"></span>
-          </label>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Walking Path Generator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/style.css">
+</head>
+<body>
+  <div id="sidebar">
+    <nav>
+      <ul>
+        <label for="rad1"><li><input id="rad1" type="radio" name="rad" value="generate" checked>Generate</li></label>
+        <label for="rad2"><li><input id="rad2" type="radio" name="rad" value="paths">Paths</li></label>
+      </ul>
+    </nav>
+    <main>
+      <div class="generate">
+        <div class="locationContainer">
+          <div id="locationIcon" aria-label="Use your current location">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div id="locationField" class="locationContainer">
+            <input id="locationInput" type="text" placeholder="Starting location" aria-label="Starting location" spellcheck="false" autocomplete="false">
+            <div id="locationSuggestions">
+              <ul id="suggestions"></ul>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div class="control-group">
-        <label>Method</label>
-        <div class="method-container">
-          <button class="method-btn active" data-method="path">Path</button>
-          <button class="method-btn" data-method="circuit">Circuit</button>
+        
+        <div class="methodContainer">
+          <input id="oneWay" type="radio" name="method" value="path"><label for="oneWay" checked>One Way</label>
+          <input id="circuit" type="radio" name="method" value="circuit"><label for="circuit">Circuit</label>
         </div>
-      </div>
-
-      <div class="control-group">
-        <label>Terrain Surface</label>
-        <div class="terrain-container">
-          <input
-            type="checkbox"
-            id="hard"
-            class="terrain-checkbox"
-            value="hard"
-          />
-          <label for="hard" class="terrain-label">Hard</label>
-
-          <input
-            type="checkbox"
-            id="semi-hard"
-            class="terrain-checkbox"
-            value="semi-hard"
-          />
-          <label for="semi-hard" class="terrain-label">Semi-hard</label>
-
-          <input
-            type="checkbox"
-            id="semi-soft"
-            class="terrain-checkbox"
-            value="semi-soft"
-          />
-          <label for="semi-soft" class="terrain-label">Semi-soft</label>
-
-          <input
-            type="checkbox"
-            id="soft"
-            class="terrain-checkbox"
-            value="soft"
-          />
-          <label for="soft" class="terrain-label">Soft</label>
+        
+        <div class="distanceContainer">
+          <input id="distance" value="5" type="number">
+          <span id="distance-units">km</span>
         </div>
+        
+        <div class="elevationContainer">
+          <i class=""></i>
+          <h2>Elevation</h2>
+          <div id="elevationContainerUp">
+            <input id="elevationUp" value="100" type="number">
+            <span class="elevation-units">m</span>
+          </div>
+          <div id="elevationContainerDown">
+            <input id="elevationDown" value="100" type="number">
+            <span class="elevation-units">m</span>
+            
+          </div>
+        </div>
+        
+        <div class="nbPathContainer">
+          <h3>Number of Paths</h3>
+          <div class="wrapper">
+            <input id="nbPaths" type="range" min="0" max="100" value="50" step="10" />
+          </div>
+        </div>
+        
+        <div id="generatePaths">
+          Generate paths
+        </div>
+        
       </div>
-
-      <div class="control-group">
-        <label>Delay (ms)</label>
-        <input type="range" id="delay" min="0" max="1000" step="50" value="0" />
-        <div class="value-display"><span id="delayValue">0</span>ms</div>
-      </div>
-
-      <button id="generate" class="generate-btn">Generate</button>
+      <div class="paths">
+        <h1>Paths already made</h1>
+        <ul></ul>
+      </div> 
+    </main>
+    
+    <div class="listOfSelectedPaths slide">
+      <i id="listOfSelectedPathsBack" class="fa-solid fa-chevron-left"></i>
+      <p id="showAllSelectedPaths">all</p>
+      <ul>
+        
+      </ul>
     </div>
+  </div>
+  <div id="map">
+  </div>
+  <div id="elevationGraph">
+    <canvas id="elevationChart"></canvas>
+  </div>
+  
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script type="module" src="app.js"></script>
+</body>
 
-    <div class="map" id="map"></div>
-
-    <div class="side-panel" id="sidePanel">
-      <div class="toggle-wrapper">
-        <button class="toggle-btn">
-          <span class="arrow">◀</span>
-        </button>
-      </div>
-
-      <div class="panel-header">
-        <button class="clear-btn">Clear All</button>
-      </div>
-
-      <div class="panel-content">
-        <div id="itemsList"></div>
-      </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="/socket.io/socket.io.js" defer></script>
-    <script type="module" src="app.js"></script>
-  </body>
+</body>
 </html>

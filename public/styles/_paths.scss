@@ -1,0 +1,73 @@
+@import "./function";
+@import "./variables";
+
+.paths {
+  display: none;
+  padding: 16px;
+  margin: 2rem 1.6rem;
+  
+  h1 {
+    text-transform: uppercase;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    
+    &:empty::before {
+      content: "No paths";
+      color: gray;
+      font-size: 1rem;
+      display: block;
+      text-align: center;
+      padding: 1rem;
+    }
+    
+    li {
+      position: relative;
+      
+      .fa-trash {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0;
+        visibility: hidden;
+      }
+      
+      &:hover  .fa-trash {
+        height: auto;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      cursor: pointer;
+      position: relative;
+      border-radius: 5px;
+      background-color: green;
+      padding: 10px;
+      
+      .pathsMeasure {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        font-size: 1.38rem;
+        margin-bottom: 5px;
+      }
+      
+      .pathsLocation {
+        font-size: 1rem;
+      }
+      
+      .pathsNumber {
+        position: absolute;
+        bottom: 5px;
+        right: 10px;
+      }
+      
+    }
+  }
+}

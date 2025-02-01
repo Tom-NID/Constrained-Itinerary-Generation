@@ -1,0 +1,547 @@
+@charset "UTF-8";
+@keyframes spring {
+  15% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.2, 1.1);
+  }
+  40% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(0.95, 0.95);
+  }
+  75% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.05, 1);
+  }
+  100% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1, 1);
+  }
+}
+nav ul {
+  display: flex;
+  width: 100%;
+  text-align: center;
+  justify-content: space-between;
+  list-style-type: none;
+}
+nav ul label {
+  cursor: pointer;
+  margin: auto;
+}
+nav ul label li {
+  padding: 1rem 2rem 1.15rem;
+  text-transform: uppercase;
+  color: #ebebeb;
+  min-width: 80px;
+  margin: auto;
+}
+nav ul label li:active {
+  transform: translateY(4px);
+}
+nav ul label li:hover, nav ul label li:has(input[type=radio]:checked) {
+  background-image: url("../asset/button.png");
+  background-size: 100% 100%;
+  color: #27262c;
+  animation: spring 300ms ease-out;
+  text-shadow: 0 -1px 0 #ef816c;
+  font-weight: bold;
+}
+nav ul label li input {
+  display: none;
+}
+nav ul label li input:checked {
+  color: black;
+}
+
+.generate {
+  display: none;
+  margin: 2rem 1.6rem;
+}
+.generate .locationContainer {
+  background-color: #f6f6f6;
+  display: flex;
+  align-items: center;
+  border-radius: 0.2rem;
+  border: 2px solid rgba(255, 255, 255, 0);
+}
+.generate .locationContainer #locationIcon {
+  position: relative;
+  margin: 0px 7px 0px 11px;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+.generate .locationContainer #locationField {
+  width: 100%;
+  position: relative;
+}
+.generate .locationContainer #locationField:focus-within {
+  border: 2px solid rgba(255, 255, 255, 0);
+}
+.generate .locationContainer #locationField input {
+  width: 100%;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border: none;
+  outline: none;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions {
+  display: none;
+  position: absolute;
+  background-color: #fff;
+  border-radius: 4px;
+  left: -45px;
+  list-style: none;
+  width: calc(100% + 45px);
+  top: calc(100% + 6px);
+  z-index: 1000;
+  overflow: hidden;
+  font-size: 15px;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions li {
+  list-style-position: inside;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions li a {
+  cursor: default;
+  display: block;
+  padding: 6px 12px;
+  color: #404040;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-title, .generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-address {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-title {
+  font-weight: bold;
+}
+.generate .locationContainer #locationField #locationSuggestions #suggestions li.active a {
+  background-color: red;
+  text-decoration: none;
+  cursor: pointer;
+}
+.generate .locationContainer:focus-within {
+  outline: none;
+  transition: border 0.2s ease;
+  border: 2px solid red;
+}
+.generate .locationContainer:focus-within #suggestions {
+  display: block !important;
+}
+.generate .distanceContainer, .generate .elevationContainer {
+  display: flex;
+  align-items: center;
+  background-color: #ccc;
+}
+.generate .distanceContainer #distance, .generate .distanceContainer #elevationUp, .generate .distanceContainer #elevationDown, .generate .elevationContainer #distance, .generate .elevationContainer #elevationUp, .generate .elevationContainer #elevationDown {
+  max-width: 50px;
+  text-align: center;
+  font-size: 1.2rem;
+}
+.generate .distanceContainer #distance:focus-within, .generate .distanceContainer #elevationUp:focus-within, .generate .distanceContainer #elevationDown:focus-within, .generate .elevationContainer #distance:focus-within, .generate .elevationContainer #elevationUp:focus-within, .generate .elevationContainer #elevationDown:focus-within {
+  outline: none;
+  transition: border 0.2s ease;
+  border: 2px solid red;
+}
+.generate .distanceContainer #distance:focus-within #suggestions, .generate .distanceContainer #elevationUp:focus-within #suggestions, .generate .distanceContainer #elevationDown:focus-within #suggestions, .generate .elevationContainer #distance:focus-within #suggestions, .generate .elevationContainer #elevationUp:focus-within #suggestions, .generate .elevationContainer #elevationDown:focus-within #suggestions {
+  display: block !important;
+}
+.generate .distanceContainer #elevationContainerUp, .generate .distanceContainer #elevationContainerDown, .generate .elevationContainer #elevationContainerUp, .generate .elevationContainer #elevationContainerDown {
+  display: flex;
+  align-items: center;
+  background-color: #ccc;
+}
+.generate .distanceContainer input[type=number], .generate .elevationContainer input[type=number] {
+  -moz-appearance: textfield;
+}
+.generate .distanceContainer input::-webkit-outer-spin-button,
+.generate .distanceContainer input::-webkit-inner-spin-button, .generate .elevationContainer input::-webkit-outer-spin-button,
+.generate .elevationContainer input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.generate .distanceContainer #distance-units, .generate .distanceContainer .elevation-units, .generate .elevationContainer #distance-units, .generate .elevationContainer .elevation-units {
+  margin-left: 12px;
+  margin-right: 4px;
+  cursor: pointer;
+}
+.generate .methodContainer {
+  display: flex;
+  text-align: center;
+  margin: auto;
+}
+.generate .methodContainer input[type=radio] {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border: none;
+  outline: none;
+}
+.generate .methodContainer input[type=radio]:checked + label {
+  color: white;
+}
+.generate .methodContainer label {
+  width: 50%;
+}
+.generate #generatePaths {
+  cursor: pointer;
+  margin: auto;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  font-size: 1.38rem;
+  padding: 10px;
+  background-color: red;
+  border-radius: 5px;
+}
+.generate #generatePaths:hover {
+  transform: scale(1.05);
+}
+
+.wrapper {
+  position: relative;
+  height: 1rem;
+  width: 20rem;
+}
+.wrapper::before, .wrapper::after {
+  padding: 0 12px;
+  display: block;
+  position: absolute;
+  z-index: 99;
+  color: #fff;
+  width: auto;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.75rem;
+  pointer-events: none;
+}
+.wrapper::before {
+  content: "1"; /* Minus on the left */
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.wrapper::after {
+  content: "10"; /* Plus on the right */
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  background-color: rgba(255, 255, 255, 0.2);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 1rem;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: ew-resize;
+}
+input[type=range][step] {
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2) calc(10% - 1px), #05051a 10%);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  box-shadow: -20rem 0 0 20rem rgba(255, 255, 255, 0.2);
+}
+input[type=range]::-moz-range-thumb {
+  border: none;
+  width: 0;
+  box-shadow: -20rem 0 0 20rem rgba(255, 255, 255, 0.2);
+}
+
+#confirmBtn {
+  margin: 0;
+  padding: 10px;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  border: none;
+}
+#confirmBtn:hover {
+  cursor: pointer;
+  background-color: rgb(197, 196, 196);
+  border-radius: 5px;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip, #confirmBtn {
+  background-color: gray;
+}
+
+.paths {
+  display: none;
+  padding: 16px;
+  margin: 2rem 1.6rem;
+}
+.paths h1 {
+  text-transform: uppercase;
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.paths ul {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.paths ul:empty::before {
+  content: "No paths";
+  color: gray;
+  font-size: 1rem;
+  display: block;
+  text-align: center;
+  padding: 1rem;
+}
+.paths ul li {
+  position: relative;
+  cursor: pointer;
+  position: relative;
+  border-radius: 5px;
+  background-color: green;
+  padding: 10px;
+}
+.paths ul li .fa-trash {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  visibility: hidden;
+}
+.paths ul li:hover .fa-trash {
+  height: auto;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.paths ul li .pathsMeasure {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  font-size: 1.38rem;
+  margin-bottom: 5px;
+}
+.paths ul li .pathsLocation {
+  font-size: 1rem;
+}
+.paths ul li .pathsNumber {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+}
+
+.listOfSelectedPaths {
+  display: none;
+  padding: 16px;
+  flex-direction: column;
+  gap: 20px;
+}
+.listOfSelectedPaths .liContainer {
+  display: flex;
+  flex-direction: row;
+  counter-increment: childIndex;
+}
+.listOfSelectedPaths .liContainer.active .exportContainer {
+  display: block;
+}
+.listOfSelectedPaths .liContainer::before {
+  content: counter(childIndex) ". ";
+  color: gray;
+  font-weight: bold;
+  padding: 4px 6px;
+  background-color: white;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  text-align: center;
+  width: 20px;
+  height: 20px;
+}
+.listOfSelectedPaths .liContainer .pathContainer {
+  width: 100%;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult {
+  padding: 10px;
+  font-size: 1.38rem;
+  background-color: red;
+  width: 100%;
+  border-radius: 10px;
+  border-top-left-radius: 0px;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .distance-elevationContainer {
+  display: flex;
+  gap: 30px;
+  margin: auto;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .distanceContainer, .listOfSelectedPaths .liContainer .pathContainer .pathResult .elevationUp, .listOfSelectedPaths .liContainer .pathContainer .pathResult .elevationDown {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  justify-items: center;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer {
+  display: flex;
+  flex-direction: column;
+  left: 0px;
+  color: #737373;
+  font-weight: 600;
+  font-size: 1.38rem;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .wayTypeTitle {
+  display: flex;
+  flex-direction: row;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .wayTypeTitle .wayTypeIcon {
+  height: 1.68rem;
+  margin-right: 10px;
+  color: wheat;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 20px;
+  white-space: nowrap;
+  border-radius: 5px;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement {
+  width: 100%;
+  height: 100%;
+  display: inline-block;
+  transition: 200ms transform;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:hover {
+  transform: scale(1.05);
+  box-shadow: white;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a1 {
+  background-color: red;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a2 {
+  background-color: blue;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a3 {
+  background-color: yellow;
+}
+.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a4 {
+  background-color: green;
+}
+.listOfSelectedPaths .liContainer .exportContainer {
+  display: none;
+}
+.listOfSelectedPaths .liContainer .exportContainer .accordionTitle {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  outline: none;
+  transition: 0.4s;
+}
+.listOfSelectedPaths .liContainer .exportContainer .active, .listOfSelectedPaths .liContainer .exportContainer .accordionTitle:hover {
+  background-color: #ccc;
+}
+.listOfSelectedPaths .liContainer .exportContainer .accordionTitle:after {
+  content: "+";
+  color: #777;
+  font-weight: bold;
+  float: right;
+  margin-left: 5px;
+}
+.listOfSelectedPaths .liContainer .exportContainer .active:after {
+  content: "−";
+}
+.listOfSelectedPaths .liContainer .exportContainer .accordionText {
+  padding: 0 18px;
+  background-color: white;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  text-rendering: geometricPrecision;
+  letter-spacing: -0.025rem;
+}
+
+input[type=email],
+input[type=text],
+input[type=number],
+input[type=password],
+input[type=month],
+input[type=week],
+input[type=datetime],
+input[type=datetime-local],
+input[type=url],
+input[type=search],
+input[type=tel],
+input:not([type]) {
+  display: block;
+  padding: 0.6rem 0.6rem;
+  letter-spacing: -0.025rem;
+  border: 2px solid #ccc;
+  color: black;
+  border-radius: 0.2rem;
+  background-color: #ccc;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+#sidebar {
+  width: 25%;
+  background: #1E1F25;
+  overflow-y: auto;
+  border-right: 1px solid #ccc;
+}
+
+#map {
+  flex: 1;
+  position: relative;
+}
+
+#elevationGraph {
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 75%;
+  height: 150px;
+  background: white;
+}
+
+ul {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  list-style: none;
+}/*# sourceMappingURL=style.css.map */
