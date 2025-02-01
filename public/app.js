@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       method: method, 
       terrain: terrain,
       precision: 1,
-      simplification: "intersection",
+      simplificationMode: "intersection",
     }); 
   });
   
