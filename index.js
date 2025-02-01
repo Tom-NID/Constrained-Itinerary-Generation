@@ -527,6 +527,78 @@ async function processData(data) {
             await sleep(delay);
         }
     }
+
+    if (document.getElementById("rrt").checked) {
+        executionTime = [];
+        for (let i = 0; i < nbfois; i++) {
+            paths = null;
+            console.time("RRT Exploration");
+            let startTime = performance.now();
+            paths = rrtExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            let endTime = performance.now();
+            console.timeEnd("RRT Exploration");
+            executionTime.push(endTime - startTime);
+        }
+        console.log(`RRT Exploration: Moyenne: ${average(executionTime)} ms`);
+
+        for (let path of paths) {
+            const coordinates = path.path.map((nodeID) => {
+                const node = graph.getCoordinates(nodeID);
+                return [node.latitude, node.longitude];
+            });
+
+            displayPath(coordinates, getRandomColor(), 0.7, path.elevation);
+            await sleep(delay);
+        }
+    }
+
+    if (document.getElementById("tabu").checked) {
+        executionTime = [];
+        for (let i = 0; i < nbfois; i++) {
+            paths = null;
+            console.time("Tabu Exploration");
+            let startTime = performance.now();
+            paths = tabuExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            let endTime = performance.now();
+            console.timeEnd("Tabu Exploration");
+            executionTime.push(endTime - startTime);
+        }
+        console.log(`Tabu Exploration: Moyenne: ${average(executionTime)} ms`);
+
+        for (let path of paths) {
+            const coordinates = path.path.map((nodeID) => {
+                const node = graph.getCoordinates(nodeID);
+                return [node.latitude, node.longitude];
+            });
+
+            displayPath(coordinates, getRandomColor(), 0.7, path.elevation);
+            await sleep(delay);
+        }
+    }
+
+    if (document.getElementById("mcts").checked) {
+        executionTime = [];
+        for (let i = 0; i < nbfois; i++) {
+            paths = null;
+            console.time("MCTS Exploration");
+            let startTime = performance.now();
+            paths = mctsExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            let endTime = performance.now();
+            console.timeEnd("MCTS Exploration");
+            executionTime.push(endTime - startTime);
+        }
+        console.log(`MCTS Exploration: Moyenne: ${average(executionTime)} ms`);
+
+        for (let path of paths) {
+            const coordinates = path.path.map((nodeID) => {
+                const node = graph.getCoordinates(nodeID);
+                return [node.latitude, node.longitude];
+            });
+
+            displayPath(coordinates, getRandomColor(), 0.7, path.elevation);
+            await sleep(delay);
+        }
+    }
 }
 
 // Fonction pour estimer le cout d'un node par rapport a un autre
@@ -841,6 +913,117 @@ function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxS
     }
 
     return paths.sort((a, b) => a.elevation - b.elevation); // Trie les chemins par dénivelé
+}
+
+
+/**https://stackoverflow.com/questions/11933385/rapid-exploring-random-trees**/
+// Adapté pour convenir à notre graphe, autrement création de chemins traversant la carte et avec des résultats incohérents
+function rrtExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 5000) {
+    let paths = [];
+    let tree = new Map();
+    tree.set(startNode, { path: [startNode], elevation: 0 });
+
+    for (let i = 0; i < maxIterations && paths.length < maxPaths; i++) {
+
+        let existingNodes = Array.from(tree.keys());
+        let randomNode = existingNodes[Math.floor(Math.random() * existingNodes.length)];
+
+
+        let neighbors = graph.getNeighbors(randomNode).filter(({ node }) => !tree.has(node));
+
+        if (neighbors.length === 0) continue;
+
+        let selectedNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)].node;
+        let elevationGain = Math.abs(graph.getCoordinates(selectedNeighbor).altitude - graph.getCoordinates(randomNode).altitude);
+        let newElevation = tree.get(randomNode).elevation + elevationGain;
+
+        // Vérifier la contrainte d’élévation
+        if (newElevation <= elevationConstraint) {
+            let newPath = [...tree.get(randomNode).path, selectedNeighbor];
+            tree.set(selectedNeighbor, { path: newPath, elevation: newElevation });
+
+            if (Math.abs(newElevation - elevationConstraint) <= elevationConstraint * 0.1) {
+                paths.push({ path: newPath, elevation: newElevation });
+            }
+        }
+    }
+
+    return paths.sort((a, b) => a.elevation - b.elevation);
+}
+
+
+function tabuExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 5000, tabuSize = 50) {
+    let paths = [];
+    let tabuList = new Set();
+    let currentPath = [startNode];
+    let currentElevation = 0;
+
+    for (let i = 0; i < maxIterations && paths.length < maxPaths; i++) {
+        let neighbors = graph.getNeighbors(currentPath[currentPath.length - 1]);
+
+        let bestNeighbor = null;
+        let bestElevation = Infinity;
+
+        for (let { node, weight } of neighbors) {
+            let elevationGain = Math.abs(graph.getCoordinates(node).altitude - graph.getCoordinates(currentPath[currentPath.length - 1]).altitude);
+            let newElevation = currentElevation + elevationGain;
+
+            if (!tabuList.has(node) && newElevation <= elevationConstraint &&
+                Math.abs(newElevation - elevationConstraint) < Math.abs(bestElevation - elevationConstraint)) {
+                bestNeighbor = node;
+                bestElevation = newElevation;
+            }
+        }
+
+        if (bestNeighbor) {
+            currentPath.push(bestNeighbor);
+            currentElevation = bestElevation;
+            tabuList.add(bestNeighbor);
+
+            if (tabuList.size > tabuSize) {
+                tabuList.delete(currentPath[0]);
+                currentPath.shift();
+            }
+
+            if (Math.abs(currentElevation - elevationConstraint) <= elevationConstraint * 0.1) {
+                paths.push({ path: [...currentPath], elevation: currentElevation });
+            }
+        } else {
+            currentPath = [startNode];
+            currentElevation = 0;
+            tabuList.clear();
+        }
+    }
+
+    return paths.sort((a, b) => a.elevation - b.elevation);
+}
+
+function mctsExplore(graph, startNode, elevationConstraint, maxPaths, simulations = 1000) {
+    let paths = [];
+
+    function simulatePath(currentNode, path, elevation) {
+        if (elevation >= elevationConstraint) {
+            if (Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) {
+                return { path: path, elevation: elevation };
+            }
+            return null;
+        }
+
+        let neighbors = graph.getNeighbors(currentNode).filter(({ node }) => !path.includes(node));
+        if (neighbors.length === 0) return null;
+
+        let nextMove = neighbors[Math.floor(Math.random() * neighbors.length)];
+        let newElevation = elevation + Math.abs(graph.getCoordinates(nextMove.node).altitude - graph.getCoordinates(currentNode).altitude);
+
+        return simulatePath(nextMove.node, [...path, nextMove.node], newElevation);
+    }
+
+    for (let i = 0; i < simulations && paths.length < maxPaths; i++) {
+        let result = simulatePath(startNode, [startNode], 0);
+        if (result) paths.push(result);
+    }
+
+    return paths.sort((a, b) => a.elevation - b.elevation);
 }
 
 // Distance entre deux points en metres
