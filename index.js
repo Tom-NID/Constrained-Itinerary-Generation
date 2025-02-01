@@ -881,7 +881,7 @@ function bfsExplore(graph, startNode, elevationConstraint, maxPaths) {
     return paths.sort((a, b) => a.elevation - b.elevation); // Trier par dénivelé
 }
 
-function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxSteps = 1000) {
+function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxSteps = 50000) {
     let paths = [];
 
     for (let i = 0; i < maxPaths; i++) {
@@ -918,7 +918,7 @@ function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxS
 
 /**https://stackoverflow.com/questions/11933385/rapid-exploring-random-trees**/
 // Adapté pour convenir à notre graphe, autrement création de chemins traversant la carte et avec des résultats incohérents
-function rrtExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 5000) {
+function rrtExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 1000000) {
     let paths = [];
     let tree = new Map();
     tree.set(startNode, { path: [startNode], elevation: 0 });
@@ -952,7 +952,7 @@ function rrtExplore(graph, startNode, elevationConstraint, maxPaths, maxIteratio
 }
 
 
-function tabuExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 5000, tabuSize = 50) {
+function tabuExplore(graph, startNode, elevationConstraint, maxPaths, maxIterations = 1000000, tabuSize = 50) {
     let paths = [];
     let tabuList = new Set();
     let currentPath = [startNode];
@@ -998,7 +998,7 @@ function tabuExplore(graph, startNode, elevationConstraint, maxPaths, maxIterati
     return paths.sort((a, b) => a.elevation - b.elevation);
 }
 
-function mctsExplore(graph, startNode, elevationConstraint, maxPaths, simulations = 1000) {
+function mctsExplore(graph, startNode, elevationConstraint, maxPaths, simulations = 1000000) {
     let paths = [];
 
     function simulatePath(currentNode, path, elevation) {
