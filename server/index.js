@@ -31,7 +31,7 @@ app.get("/", function (req, res) {
 function getGraph(graph, ways, nodeWayCounts, simplificationMode, queryData) {
   let addedNodes = new Set();
   let intersectionSize = 1;
-  let simplificationFactor = 50;
+  let simplificationFactor = 25;
 
   // way-simplification
   let oldToNew = new Map();
@@ -261,37 +261,37 @@ async function processData(
   getGraph(fullGraph, data.elements, nodeWayCounts, "full", queryData);
   console.timeEnd("Full graph");
   // }
-  if (queryData.simplificationMode === "intersection") {
-    console.time("Intersection graph");
-    getGraph(
-      intersectionGraph,
-      data.elements,
-      nodeWayCounts,
-      "intersection",
-      queryData
-    );
-    console.timeEnd("Intersection graph");
-  } else if (queryData.simplificationMode === "way-simplification") {
-    console.time("Way-simplification graph");
-    getGraph(
-      waySimplifiedGraph,
-      data.elements,
-      nodeWayCounts,
-      "way-simplification",
-      queryData
-    );
-    console.timeEnd("Way-simplification graph");
-  } else if (queryData.simplificationMode === "graph-simplification") {
-    console.time("Graph-simplification graph");
-    getGraph(
-      simplifiedGraph,
-      data.elements,
-      nodeWayCounts,
-      "graph-simplification",
-      queryData
-    );
-    console.timeEnd("Graph-simplification graph");
-  }
+  // if (queryData.simplificationMode === "intersection") {
+  console.time("Intersection graph");
+  getGraph(
+    intersectionGraph,
+    data.elements,
+    nodeWayCounts,
+    "intersection",
+    queryData
+  );
+  console.timeEnd("Intersection graph");
+  // } else if (queryData.simplificationMode === "way-simplification") {
+  console.time("Way-simplification graph");
+  getGraph(
+    waySimplifiedGraph,
+    data.elements,
+    nodeWayCounts,
+    "way-simplification",
+    queryData
+  );
+  console.timeEnd("Way-simplification graph");
+  // } else if (queryData.simplificationMode === "graph-simplification") {
+  console.time("Graph-simplification graph");
+  getGraph(
+    simplifiedGraph,
+    data.elements,
+    nodeWayCounts,
+    "graph-simplification",
+    queryData
+  );
+  console.timeEnd("Graph-simplification graph");
+  // }
 
   console.log(
     "full: \n\tnodes: ",
@@ -489,31 +489,67 @@ io.on("connection", function (socket) {
 
     // Reconstruct the paths based on the full graph
     // TODO remove dead ends
-    if (simplificationMode !== "full") {
-      paths.forEach((path) => {
-        let completePath = [];
-        let partialPath = path.path;
-        for (let i = 1; i < partialPath.length; ++i) {
-          completePath.push(
-            ...fullGraph
-              .aStar(partialPath[i - 1], partialPath[i], terrain)
-              .slice(1)
+    // if (simplificationMode !== "full") {
+    paths.forEach((path) => {
+      let completePath = [];
+      let length = path.length;
+      let partialPath = path.path;
+
+      // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
+      completePath = reconstructPath(partialPath);
+
+      // Remove the dead ends of the reconstructed path
+      completePath = removeDeadEnds(completePath, path.endingNode);
+
+      // Remove nodes from the path if it is too long
+      if (method === "path") {
+        let currLength = 0;
+        for (let j = 1; j < completePath.length; ++j) {
+          let sectionDistance = fullGraph.getHaversineCost(
+            completePath[j - 1],
+            completePath[j]
           );
+          currLength += sectionDistance;
+          if (currLength >= length) {
+            let index =
+              Math.abs(length - currLength) <
+              Math.abs(length - (currLength - sectionDistance))
+                ? j
+                : j - 1; // Minimise la difference entre currLength et radius
+            completePath = completePath.slice(0, index + 1);
+            path.endingNode = fullGraph.getNodeCoordinates(
+              completePath[completePath.length - 1]
+            );
+            break;
+          }
         }
-        let pathSurface = [];
-        for (let i = 1; i < completePath.length; ++i) {
-          // console.log(completePath[i - 1], completePath[i]);
-          pathSurface.push(
-            fullGraph.getSurfaceType(completePath[i - 1], completePath[i])
-          );
-        }
-        completePath = completePath.map((nodeId) =>
-          fullGraph.getNodeCoordinates(nodeId)
+        console.log("currLength: ", currLength);
+      }
+
+      // console.log(completePath);
+
+      // Get the different surfaces of the path
+      let pathSurface = [];
+      for (let i = 1; i < completePath.length; ++i) {
+        pathSurface.push(
+          fullGraph.getSurfaceType(completePath[i - 1], completePath[i])
         );
-        path.path = completePath;
-        path.pathSurface = pathSurface;
-      });
-    }
+      }
+
+      // The new length of the path
+      let pathLength = fullGraph.getPathLength(completePath);
+      console.log("pathlength: ", pathLength);
+
+      // Replace the node Ids by coordinates
+      completePath = completePath.map((nodeId) =>
+        fullGraph.getNodeCoordinates(nodeId)
+      );
+
+      path.path = completePath;
+      path.pathSurface = pathSurface;
+      path.length = pathLength;
+    });
+    // }
 
     console.timeEnd("Generation paths");
 
@@ -524,4 +560,38 @@ io.on("connection", function (socket) {
 
     graph.clear();
   });
+
+  function reconstructPath(simplifiedPath) {
+    let completePath = [];
+    for (let i = 1; i < simplifiedPath.length; ++i) {
+      completePath.push(
+        ...fullGraph
+          .aStar(simplifiedPath[i - 1], simplifiedPath[i], terrain)
+          .slice(1)
+      );
+    }
+    return completePath;
+  }
+
+  function removeDeadEnds(path, endingNode) {
+    let noDeadEnds = false;
+    while (!noDeadEnds) {
+      noDeadEnds = true;
+      for (let i = 1; i < path.length - 1; i++) {
+        let prev = path[i - 1];
+        let curr = path[i];
+        let next = path[i + 1];
+        if (prev == next && curr != endingNode) {
+          noDeadEnds = false;
+          path.splice(i, 2);
+          break;
+        }
+        if (curr == prev) {
+          noDeadEnds = false;
+          path.splice(i);
+        }
+      }
+    }
+    return path;
+  }
 });

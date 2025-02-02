@@ -62,13 +62,6 @@ export default class Graph {
       let euclideanDistance = this.getEuclideanDistance(nodeId1, nodeId2);
       let haversineDistance = this.getHaversineDistance(nodeId1, nodeId2);
       let cost = new Cost(euclideanDistance, haversineDistance, surfaceType);
-      // console.log(
-      //   nodeId1,
-      //   nodeId2,
-      //   euclideanDistance,
-      //   haversineDistance,
-      //   surfaceType
-      // );
       this.#nodes.get(nodeId1).addEdge(nodeId2, cost);
     }
   }
@@ -181,7 +174,6 @@ export default class Graph {
   }
 
   getHaversineDistance(nodeId1, nodeId2, coord = {}) {
-    // console.log(this.hasNode(nodeId1), nodeId1);
     const coordNode1 =
       nodeId1 == -1 ? coord : this.#nodes.get(nodeId1).getCoordinates();
     const coordNode2 = this.#nodes.get(nodeId2).getCoordinates();
@@ -383,17 +375,6 @@ export default class Graph {
         let tentativeGScore =
           gScore.get(currentId) +
           this.getHaversineCost(currentId, neighborId) * surfacePenalty;
-        // console.log(
-        //   this.getSurfaceType(currentId, neighborId),
-        //   terrain,
-        //   surfacePenalty
-        // );
-        // console.log(
-        //   currentId,
-        //   neighborId,
-        //   tentativeGScore,
-        //   this.getSurfaceType(currentId, neighborId)
-        // );
 
         if (
           !gScore.has(neighborId) ||
@@ -428,12 +409,8 @@ export default class Graph {
    */
   getPathLength(path) {
     let len = 0;
-    for (let i = 1; i < path.length - 1; ++i) {
+    for (let i = 1; i < path.length; ++i) {
       len += this.getHaversineCost(path[i - 1], path[i]);
-      // console.log(
-      //   "surface penalty",
-      //   this.getSurfaceType(path[i - 1], path[i])
-      // );
     }
     return len;
   }
