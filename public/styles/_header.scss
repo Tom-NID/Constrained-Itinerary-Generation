@@ -1,0 +1,60 @@
+@import './variables';
+@import './function';
+
+@keyframes spring {
+	15% {
+		-webkit-transform-origin: center center;
+		-webkit-transform: scale(1.2, 1.1);
+	}
+	40% {
+		-webkit-transform-origin: center center;
+		-webkit-transform: scale(0.95, 0.95);
+	}
+	75% {
+		-webkit-transform-origin: center center;
+		-webkit-transform: scale(1.05, 1);
+	}
+	100% {
+		-webkit-transform-origin: center center;
+		-webkit-transform: scale(1, 1);
+	}
+}
+
+nav {
+    ul {
+        display: flex;
+        width: 100%;
+        text-align: center;
+        justify-content: space-between;
+        list-style-type: none;
+
+        label {
+            cursor: pointer;
+            margin: auto;
+    
+            li {
+                padding: 1rem 2rem 1.15rem;
+                text-transform: uppercase;
+                color: $color_1;
+                min-width: 80px;
+                margin: auto;
+                &:active {
+                    transform: translateY(4px);
+                }
+                
+                &:hover, &:has(input[type="radio"]:checked) {
+                    @include button();
+                }
+
+                input {
+                    display: none;
+                }
+
+                input:checked {
+                    color: black;
+                }
+
+            }
+        }
+    }   
+}

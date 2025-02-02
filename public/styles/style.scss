@@ -1,0 +1,68 @@
+@import './header';
+@import './variables';
+@import './function';
+@import './generate';
+@import './paths';
+@import './listSelectedPaths';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  text-rendering: geometricPrecision;
+  letter-spacing: -0.025rem;
+  // cursor: default;
+}
+
+input[type="email"],
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="month"],
+input[type="week"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input:not([type]) {
+  display: block;
+  padding: 0.6rem 0.6rem;
+  letter-spacing: -0.025rem;
+  border: 2px solid $lighter-gray;
+  color : black;
+  border-radius: $border-radius; //0.2rem
+  background-color: $lighter-gray;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+  #sidebar {
+    width: 25%;
+    // width: 100%;
+    background: #1E1F25;
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
+  }
+  #map {
+    flex: 1;
+    position: relative;
+  }
+  #elevationGraph {
+    position: absolute;
+    bottom: 0;
+    left: 25%;
+    width: 75%;
+    height: 150px;
+    background: white;
+  }
+
+  ul {
+    appearance: none;
+    list-style: none;
+  }
