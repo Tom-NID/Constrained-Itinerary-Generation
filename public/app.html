@@ -9,81 +9,262 @@
   <link rel="stylesheet" href="./styles/style.css">
 </head>
 <body>
-  <div id="sidebar">
+  <div id="Side_Bar">
     <nav>
-      <ul>
-        <label for="rad1"><li><input id="rad1" type="radio" name="rad" value="generate" checked>Generate</li></label>
-        <label for="rad2"><li><input id="rad2" type="radio" name="rad" value="paths">Paths</li></label>
-      </ul>
-    </nav>
-    <main>
-      <div class="generate">
-        <div class="locationContainer">
-          <div id="locationIcon" aria-label="Use your current location">
-            <i class="fa-solid fa-location-dot"></i>
-          </div>
-          <div id="locationField" class="locationContainer">
-            <input id="locationInput" type="text" placeholder="Starting location" aria-label="Starting location" spellcheck="false" autocomplete="false">
-            <div id="locationSuggestions">
-              <ul id="suggestions"></ul>
+      <div class="Tab_Container">
+        <div class="Tab_Active" id="Goals">
+          <div class="Shared_Row">
+            <div class="Tab_Number">1</div>
+            <div class="Shared_Column">
+              <div class="Tab_Title">
+                <span>
+                  Goals
+                </span>
+              </div>
+              <div class="Tab_SubTitle">
+                <span>
+                  Set Parameters
+                </span>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div class="methodContainer">
-          <input id="oneWay" type="radio" name="method" value="path"><label for="oneWay" checked>One Way</label>
-          <input id="circuit" type="radio" name="method" value="circuit"><label for="circuit">Circuit</label>
-        </div>
-        
-        <div class="distanceContainer">
-          <input id="distance" value="5" type="number">
-          <span id="distance-units">km</span>
-        </div>
-        
-        <div class="elevationContainer">
-          <i class=""></i>
-          <h2>Elevation</h2>
-          <div id="elevationContainerUp">
-            <input id="elevationUp" value="100" type="number">
-            <span class="elevation-units">m</span>
-          </div>
-          <div id="elevationContainerDown">
-            <input id="elevationDown" value="100" type="number">
-            <span class="elevation-units">m</span>
-            
-          </div>
-        </div>
-        
-        <div class="nbPathContainer">
-          <h3>Number of Paths</h3>
-          <div class="wrapper">
-            <input id="nbPaths" type="range" min="0" max="100" value="50" step="10" />
-          </div>
-        </div>
-        
-        <div id="generatePaths">
-          Generate paths
-        </div>
-        
       </div>
-      <div class="paths">
+      <div class="Tab_Container">
+        <div class="Tab_Not_Active" id="Route">
+          <div class="Shared_Row">
+            <div class="Tab_Number">2</div>
+            <div class="Shared_Column">
+              <div class="Tab_Title">
+                <span>
+                  Route
+                </span>
+              </div>
+              <div class="Tab_SubTitle">
+                <span>
+                  Navigate. Export
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <main>
+      <div class="Generate">
+        <div class="Button_Container">
+        </div>
+        
+        <div class="Parameters_Goals">
+          <div class="Location_Container">
+            <div id="Location_Icon" title="Departure location">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div id="Location_Field" class="Location_Container">
+              <input id="Location_Input" type="text" placeholder="Starting location" aria-label="Starting location" spellcheck="false" autocomplete="false">
+              <div id="Location_Suggestions">
+                <ul id="Suggestions"></ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="Method_Container">
+            <label for="One_Way" title="Your location to a random location"><input id="One_Way" type="radio" name="method" value="path" checked>One Way</label>
+            <label for="Circuit" title="A loop, from your location to your location"><input id="Circuit" type="radio" name="method" value="circuit">Circuit</label>
+          </div>
+          <div class="Distance_Container">
+            <p class="Route_Label" title="Distance">
+              <span></span>
+              Length
+            </p>
+            <div class="Route_Slider">
+              <div class="Slider_Bar"></div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Handle"></div>
+            </div>
+          </div>
+          <div class="Elevation_Container">
+            <p class="Elevation_Label" title="Elevation (if circuit mode is enabled, downward elevation will not be taken into account)">
+              Elevation
+            </p>
+            <div class="Elevation_Slider">
+              <div id="Elevation_Container_Up">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <input id="Elevation_Up" value="100" type="number">
+                <span>m</span>
+              </div>
+              <div id="Elevation_Container_Down">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <input id="Elevation_Down" value="100" type="number">
+                <span>m</span>
+              </div>
+            </div>
+          </div>
+          <div class="WayTypes_Container">
+            <p class="WayTypes_Label" title="Desired road type">
+              Way Types
+            </p>
+            <div class="WayTypes_Checkbox">
+              <input type="checkbox" id="Hard" value="hard"/>
+              <label for="Hard">Hard</label>
+              
+              <input type="checkbox" id="Semi_Hard" value="semi-hard"/>
+              <label for="Semi_Hard">Semi-hard</label>
+              
+              <input type="checkbox" id="Semi_Soft" value="semi-soft"/>
+              <label for="Semi_Soft">Semi-soft</label>
+              
+              <input type="checkbox" id="Soft" value="soft"/>
+              <label for="Soft">Soft</label>
+            </div>
+          </div>
+          <div class="Nb_Paths_Container">
+            <p class="Paths_Label" title="Maximum number of paths generated (can be lower)">
+              <span></span>
+              Number of Paths
+            </p>
+            <div class="Paths_Slider">
+              <div class="Slider_Bar"></div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Handle"></div>
+            </div>
+          </div>
+          <div class="Simplification_Container">
+            <p class="Simplification_Label" title="To reduce path generation time">
+              Simplification    
+            </p>
+            <div class="Simplification_Radio">
+              <input type="radio" name="simplification" id="Full" value="full"/>
+              <label for="Full" title="Take the graph without simplification">Full</label>
+              
+              <input type="radio" name="simplification" id="Intersection" value="intersection" checked/>
+              <label for="Intersection" title="Delete all nodes without being an intersection">Intersection</label>
+              
+              <input type="radio" name="simplification" id="Way_Simplification" value="way-simplification"/>
+              <label for="Way_Simplification" title="Simplifies by encompassing multiple nearby nodes">Way Simplification</label>
+              
+              <input type="radio" name="simplification" id="Graph" value="graph-simplification"/>
+              <label for="Graph" title="">Graph Simplification</label>
+
+              <input type="radio" name="simplification" id="Auto" value="auto"/>
+              <label for="Auto"title="Simplifies as needed">Auto</label>
+            </div>
+          </div>
+          <div class="Precision_Container">
+            <p class="Precision_Label" title="To get as close as possible to the request, 1 not precise and 5 precise">
+              <span></span>
+              Precision
+            </p>
+            <div class="Precision_Slider">
+              <div class="Slider_Bar"></div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Container_MarBel">
+                <div class="Slider_Mark"></div>
+                <div class="Slider_Label"></div>
+              </div>
+              <div class="Slider_Handle"></div>
+            </div>
+          </div>
+        </div>
+        <div id="Generate_Paths">
+          <div class="ActionButton_More_Parameters">More</div>
+          <div class="Action_Actions">
+            <div class="ActionButton_Container">
+              <div class="ActionButton_Icon">
+                <i>></i>
+              </div>
+              <div class="ActionButton_Text">
+                <span>
+                  Plan My Route
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="Paths">
         <h1>Paths already made</h1>
         <ul></ul>
       </div> 
     </main>
     
-    <div class="listOfSelectedPaths slide">
-      <i id="listOfSelectedPathsBack" class="fa-solid fa-chevron-left"></i>
-      <p id="showAllSelectedPaths">all</p>
+    <div class="List_Of_Selected_Paths Slide">
+      <i id="List_Of_Selected_Paths_Back" class="fa-solid fa-chevron-left"></i>
+      <!-- <p id="Show_All_Selected_Paths">all</p> -->
       <ul>
         
       </ul>
     </div>
   </div>
-  <div id="map">
+  <div id="Map">
   </div>
-  <div id="elevationGraph">
-    <canvas id="elevationChart"></canvas>
+  <div id="Elevation_Graph">
+    <canvas id="Elevation_Chart"></canvas>
   </div>
   
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>

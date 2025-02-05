@@ -11,28 +11,6 @@
   box-sizing: border-box;
   text-rendering: geometricPrecision;
   letter-spacing: -0.025rem;
-  // cursor: default;
-}
-
-input[type="email"],
-input[type="text"],
-input[type="number"],
-input[type="password"],
-input[type="month"],
-input[type="week"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="url"],
-input[type="search"],
-input[type="tel"],
-input:not([type]) {
-  display: block;
-  padding: 0.6rem 0.6rem;
-  letter-spacing: -0.025rem;
-  border: 2px solid $lighter-gray;
-  color : black;
-  border-radius: $border-radius; //0.2rem
-  background-color: $lighter-gray;
 }
 
 body {
@@ -42,24 +20,25 @@ body {
     overflow: hidden;
     font-family: Arial, sans-serif;
   }
-  #sidebar {
+
+  #Side_Bar {
     width: 25%;
     // width: 100%;
-    background: #1E1F25;
+    background: $white;
     overflow-y: auto;
-    border-right: 1px solid #ccc;
+    border-right: 1px solid $border-sideBar;
   }
-  #map {
+  #Map {
     flex: 1;
     position: relative;
   }
-  #elevationGraph {
+  #Elevation_Graph {
     position: absolute;
     bottom: 0;
     left: 25%;
     width: 75%;
     height: 150px;
-    background: white;
+    background: $white;
   }
 
   ul {

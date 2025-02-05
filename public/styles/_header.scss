@@ -1,60 +1,88 @@
 @import './variables';
 @import './function';
 
-@keyframes spring {
-	15% {
-		-webkit-transform-origin: center center;
-		-webkit-transform: scale(1.2, 1.1);
-	}
-	40% {
-		-webkit-transform-origin: center center;
-		-webkit-transform: scale(0.95, 0.95);
-	}
-	75% {
-		-webkit-transform-origin: center center;
-		-webkit-transform: scale(1.05, 1);
-	}
-	100% {
-		-webkit-transform-origin: center center;
-		-webkit-transform: scale(1, 1);
-	}
-}
-
 nav {
-    ul {
-        display: flex;
-        width: 100%;
-        text-align: center;
-        justify-content: space-between;
-        list-style-type: none;
+  @include displayFlex(row);
+	margin: 0px;
+	padding: 0px;
+	list-style: none;
+	white-space: none;
+	background-color: #4A4A4A;
+	.Tab_Container {
+		display: inline-block;
+		flex: 1 1 0%;
+		padding: 0px 10px;
+		margin: 0px 5px 6px 5px;
+		cursor: pointer;
+		outline: none;
+		background-color: white;
+		border-radius: 3px 3px;
+		
+		&:has(.Tab_Active) {
+			border-radius: 3px 3px 0 0;
+			border-bottom: 3px solid white;
+			margin: 0px 5px;
+		}
+		
+		.Tab_Active {
+			position: relative;
+			&::before {
+				position: absolute;
+				bottom: -5px;
+				left: -16px;
+				width: 6px;
+				height: 6px;
+				content: " ";
+				box-shadow: white 2px 2px 0px;
+				border-bottom-right-radius: 6px;
+				border-width: 0px 1px 1px 0px;
+			}
+			
+			&::after {
+				position: absolute;
+				bottom: -5px;
+				width: 6px;
+				height: 6px;
+				content: " ";
+				right: -16px;
+				box-shadow: white -2px 2px 0px;
+				border-bottom-left-radius: 6px;
+				border-width: 0px 0px 1px 1px;
+			} 
+			
+			.Tab_Number {
+				color: $orange !important;
+			}
+		}
+		.Shared_Row {
+      @include displayFlex(row);
+      
+			.Tab_Number {
+				font-size: 44px;
+				font-weight: 600;
+				color: $gray;
+				margin-right: 10px;
+			}
+			
+			.Shared_Column {
+        @include displayFlex(column);
+				justify-content: center;
+				color: #4a4a4a;
 
-        label {
-            cursor: pointer;
-            margin: auto;
-    
-            li {
-                padding: 1rem 2rem 1.15rem;
-                text-transform: uppercase;
-                color: $color_1;
-                min-width: 80px;
-                margin: auto;
-                &:active {
-                    transform: translateY(4px);
-                }
-                
-                &:hover, &:has(input[type="radio"]:checked) {
-                    @include button();
-                }
-
-                input {
-                    display: none;
-                }
-
-                input:checked {
-                    color: black;
-                }
-
-            }
+        span {
+          font-size: 12px;
+          user-select: initial;
+          white-space: nowrap;
+          display: inline-block;
         }
-    }   
+				
+				.Tab_Title {
+					font-weight: 600;
+					span {
+						font-size: 18px;
+					}
+				}				
+			}
+		}
+	}
 }

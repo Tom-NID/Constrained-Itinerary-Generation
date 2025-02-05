@@ -1,257 +1,337 @@
 @import "./function";
 @import "./variables";
 
-.generate {
+.Generate {
   display: none;
-  margin: 2rem 1.6rem;
-
-  .locationContainer {
-    background-color: #f6f6f6;
-    display: flex;
-    align-items: center;
-    border-radius: 0.2rem;
-    border: 2px solid #ffffff00;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow-y: hidden;  
+  
+  .WayTypes_Label, .Elevation_Label, .Paths_Label, .Route_Label, .Precision_Label {
+    margin: 0;
+    font-weight: bold;
+    text-align: left;
     
-    #locationIcon {
-      position: relative;
-      margin: 0px 7px 0px 11px;
-      cursor: pointer;
-      font-size: 1.5rem;
-    }
-    
-    #locationField {
-      width: 100%;
-      position: relative;
-      
-      &:focus-within {
-        border: 2px solid #ffffff00;
-      }
-      
-      input {
-        width: 100%;
-        appearance: none;
-        border: none;
-        outline: none;
-      }
-      #locationSuggestions {
-        
-        #suggestions {
-          display: none;
-          position: absolute;
-          background-color: #fff;
-          border-radius: 4px;
-          left: -45px;
-          list-style: none;
-          width: calc(100% + 45px);
-          top: calc(100% + 6px);
-          z-index: 1000;
-          overflow: hidden;
-          font-size: 15px;
-          li {
-            list-style-position: inside;
-            a {
-              cursor: default;
-              display: block;
-              padding: 6px 12px;
-              color: #404040;
-              
-              .suggestions-title, .suggestions-address {
-                text-overflow: ellipsis;
-                overflow: hidden;
-                white-space: nowrap;
-              }
-              
-              .suggestions-title {
-                font-weight: bold;
-              }
-              .suggestions-address {
-                
-              }
-            }
-            &.active a{
-              background-color: red;
-              text-decoration: none;
-              cursor: pointer;
-            }
-          }
-          
-        }
-      }
-    }
-    
-    &:focus-within {
-      outline: none;
-      transition: border 0.2s ease;
-      border: 2px solid $locationContainerwithin;
-      #suggestions {
-        display: block !important;
-      }
+    span {
+      margin: 0 0 0 0.4rem;
+      float: right;
     }
   }
   
-  .distanceContainer, .elevationContainer {
-    display: flex;
+  .Button_Container {
+    @include displayFlex(row);
     align-items: center;
-    background-color: $lighter-gray;
+    justify-content: flex-end;
+    padding: 10px;
+    min-height: 54px;
+  }
+  
+  .Parameters_Goals {
+    @include displayFlex(column);
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0px 30px 15px;
     
-    #distance, #elevationUp, #elevationDown {
-      max-width: 50px;
-      text-align: center;
-      font-size: 1.2rem;
+    &~.Location_Container, .Method_Container, .Distance_Container, .Elevation_Container, .WayTypes_Container, .Nb_Paths_Container, .Simplification_Container, .Precision_Container {
+      margin-top: 20px;
+    } 
+    
+    .Location_Container {
+      display: flex;
+      align-items: center;
+      border-radius: 0.2rem;
+      border: 2px solid $white;
+      background-color: $white;
+      outline: none;
+      
+      #Location_Icon {
+        position: relative;
+        margin: 0px 7px 0px 11px;
+        cursor: pointer;
+        font-size: 1.5rem;
+      }
+      
+      #Location_Field {
+        position: relative;
+        width: 100%;
+        border: none;
+        
+        input {
+          width: 100%;
+          padding: 0.6rem 0.6rem;
+          appearance: none;
+          border: none;
+          outline: none;
+        }
+        #Location_Suggestions {
+          #Suggestions {
+            display: none;
+            position: absolute;
+            background-color: $light-gray;
+            border-radius: 4px;
+            left: -45px;
+            list-style: none;
+            width: calc(100% + 45px);
+            top: calc(100% + 6px);
+            z-index: 1000;
+            overflow: hidden;
+            font-size: 15px;
+            li {
+              list-style-position: inside;
+              a {
+                cursor: default;
+                display: block;
+                padding: 6px 12px;
+                color: $light-black;
+                
+                .Suggestions_Title, .Suggestions_Address {
+                  text-overflow: ellipsis;
+                  overflow: hidden;
+                  white-space: nowrap;
+                }
+                
+                .Suggestions_Title {
+                  font-weight: bold;
+                }
+              }
+              &.active a{
+                background-color: $gray;
+                text-decoration: none;
+                cursor: pointer;
+              }
+            }
+          }
+        }
+      }
+      
       &:focus-within {
         outline: none;
         transition: border 0.2s ease;
-        border: 2px solid $locationContainerwithin;
-        #suggestions {
+        border: 2px solid $orange;
+        #Suggestions {
           display: block !important;
         }
       }
     }
     
-    #elevationContainerUp, #elevationContainerDown {
+    .Method_Container {
       display: flex;
+      text-align: center;
+      margin: 10px 0;
+      gap: 20px;
       align-items: center;
-      background-color: $lighter-gray;
-    }
-    
-    input[type="number"] {
-      -moz-appearance: textfield;
-    }
-    
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    
-    #distance-units, .elevation-units {
-      margin-left: 12px;
-      margin-right: 4px;
-      cursor: pointer;
-    }
-  }
-  
-  .methodContainer {
-    display: flex;
-    text-align: center;
-    margin: auto;
-    
-    input[type="radio"] {
-      appearance: none;
-      border: none;
-      outline: none;
-      
-      &:checked + label {
-        color: white;
+      label {
+        color: $black;
+        padding: 0.75rem 0;
+        width: 50%;
+        font-weight: bold;
         
+        &:active {
+          transform: translateY(4px);
+        }
+        
+        &:hover, &:has(input[type="radio"]:checked) {
+          @include button();
+        }
+        
+        input {
+          display: none;
+        }
+        
+        input:checked {
+          color: $black;
+        }
+      }
+      
+      input[type="radio"] {
+        display: none;
+      }
+      
+      input[type="radio"]:checked + label {
+        transform: scale(1.2);
+      }
+      
+      input[type="radio"]:not(:checked) + label {
+        opacity: 0.6;
       }
     }
-    label {
-      width: 50%;
+    
+    .Distance_Container {
+      .Route_Slider {
+        @include sliderInput();
+      }
     }
     
+    .Elevation_Container {
+      .Elevation_Slider {
+        @include displayFlex(row);
+        gap: 15px;
+        
+        #Elevation_Container_Up, #Elevation_Container_Down {
+          @include displayFlex(row);
+          width: 50%;    
+          background-color: $lighter-gray;
+          &:focus-within{
+            border: 2px solid $orange;
+            border-radius: $border-radius;
+          }
+          
+          i {
+            margin: auto 0;
+            margin-left: 5px;
+          }
+          
+          span {
+            text-align: left;
+            margin: auto 0.6rem;
+            margin-left: 0;  
+          }
+          
+          input[type="number"] {
+            -moz-appearance: textfield;
+            display: block;
+            padding: 0.6rem 0.6rem;
+            letter-spacing: -0.025rem;
+            border: 2px solid $lighter-gray;
+            color : black;
+            width: 90%;
+            border-radius: $border-radius;
+            background-color: $lighter-gray;
+            text-align: right;
+            &:focus-within {
+              border: none;
+              outline: none;
+            }
+          }
+          
+          input::-webkit-outer-spin-button,
+          input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+        }
+      }
+    }
     
+    .WayTypes_Container, .Simplification_Container {
+      .WayTypes_Checkbox, .Simplification_Radio {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        
+        input {
+          display: none;
+        }
+        
+        label {
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          background: $dark-white;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 14px;
+        }
+        
+        input:checked + label {
+          background-color: $orange;
+          color: $color_2;
+          animation: spring 300ms ease-out;
+          text-shadow: 0 -1px 0 $text_shadow;
+          font-weight: bold;
+        }
+        
+        label:hover {
+          background-color: $orange-light;
+          transform: scale(1.02);
+        }
+        
+        input:checked + label:hover {
+          transform: scale(1.02);
+        }
+      }
+    }
+  
+    .Precision_Container, .Simplification_Container {
+      display: none;
+    }
+    .Precision_Container {
+      .Precision_Slider {
+        @include sliderInput();
+      }
+    }
     
+    .Nb_Paths_Container {
+      .Paths_Slider {
+        @include sliderInput();
+      }
+    }
   }
-
-  #generatePaths {
-    cursor: pointer;
-    margin: auto;
-    justify-content: center;
-    text-align: center;
+  
+  
+  #Generate_Paths {
+    @include displayFlex(row);
+    background-color: $light-black2;
     align-items: center;
-    font-size: 1.38rem;
-    padding: 10px;
-    background-color: red;
-    border-radius: 5px;
-
-    &:hover {
-      transform: scale(1.05);
+    justify-content: space-between;
+    padding-left: 10px;
+    .ActionButton_More_Parameters {
+      padding: 8px 16px;
+      border-radius: 3px;
+      background-color: $orange;
+      color: $white;
+      cursor: pointer;
+    }
+    .Action_Actions {
+      @include displayFlex(row);
+      -moz-box-align: center;
+      align-items: center;
+      padding: 8px 0px;
+      
+      .ActionButton_Container {
+        @include displayFlex(row);
+        background-color: $orange;
+        color: $white;
+        padding: 0 16px;
+        height: 42px;
+        font-weight: 500;
+        cursor: pointer;
+        box-sizing: border-box;
+        transition: 200ms;
+        margin-right: 10px;
+        -moz-box-align: center;
+        align-items: center;
+        border-radius: 3px;
+        
+        .ActionButton_Icon {
+          margin-right: 15px;
+          i {
+            width: 13px;
+            height: 22px;
+          }
+        }
+        
+        .ActionButton_Text {
+          @include displayFlex(column);
+          
+          span {
+            font-size: 15px;
+            user-select: initial;
+            white-space: nowrap;
+            display: inline-block;
+          }
+        }
+      }
     }
   }
 }
 
-.wrapper {
-  position: relative;
-  height: 1rem;
-  width: 20rem;
-  
-  &::before,
-  &::after {
-    padding: 0 12px;
-    display: block;
-    position: absolute;
-    z-index: 99;
-    color: #fff;
-    width: auto;
-    text-align: center;
-    font-size: 1rem;
-    line-height: 1;
-    padding: 0.75rem;
-    pointer-events: none;
-  }
-  
-  &::before {
-    content: "1"; /* Minus on the left */
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  
-  &::after {
-    content: "10"; /* Plus on the right */
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  background-color: rgba(#fff, 0.2);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 1rem;
-  transform: translate(-50%, -50%);
-  border-radius: 1rem;
-  overflow: hidden;
-  cursor: ew-resize; 
-  
-  &[step] {
-    background-color: transparent;
-    background-image: repeating-linear-gradient(
-    to right,
-    rgba(#fff, 0.2),
-    rgba(#fff, 0.2) calc(10% - 1px),
-    #05051a 10%
-    );
-  }
-  
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 0;
-    box-shadow: -20rem 0 0 20rem rgba(#fff, 0.2);
-  }
-  
-  &::-moz-range-thumb {
-    border: none;
-    width: 0;
-    box-shadow: -20rem 0 0 20rem rgba(#fff, 0.2);
-  }
-}
-
-#confirmBtn {
+#Confirm_Button {
+  @include center();
   margin: 0;
   padding: 10px;
-  justify-content: center;
-  text-align: center;
-  align-items: center;
   border: none;
-
+  
   &:hover {
     cursor: pointer;
     background-color: $popUpBgHover;
@@ -259,7 +339,6 @@ input[type="range"] {
   }
 }
 
-
-.leaflet-popup-content-wrapper,  .leaflet-popup-tip, #confirmBtn{
+.leaflet-popup-content-wrapper,  .leaflet-popup-tip, #Confirm_Button{
   background-color: $popUpBg;
 }
