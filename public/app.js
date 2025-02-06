@@ -117,6 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const terrain = Array.from(document.querySelectorAll(".WayTypes_Checkbox input:checked")).map((checkbox) => checkbox.value);
     const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
     const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
+    const name = document.querySelector("#Location_Input").value;
+    const simplification = document.querySelector(".Simplification_Radio input:checked").value;
+    
     sock.emit("request", {
       startingPoint : {lat : lat, lng : lng},
       radius : radius,
@@ -125,23 +128,14 @@ document.addEventListener("DOMContentLoaded", () => {
       terrain: terrain,
       elevation: {up: elevationUp, down: elevationDown},
       precision: 1,
-      simplificationMode: "intersection",
+      simplificationMode: simplification,
+      name: name,
     }); 
   });
   
   sock.on("result", (res) => {
-    drawSelectedPaths(res); 
-    let pathsGroup = { //TODO
-      request: {
-        lenght: 20,
-        elevationUp: 500,
-        elevationDown: 500,
-        wayType: ["hard", "semi-soft"],
-        name: "Radd, Laupin, Vielank, Dömitz-Malliß, Ludwigslust-Parchim, Mecklenburg-Vorpommern, 19303, Germany",
-      },
-      response : res,
-    }
-    allPaths.push(pathsGroup);
+    drawSelectedPaths(res.response); 
+    allPaths.push(res);
   });
 
   function updateSliderMarBel(div, unit, min, max, start = -1) {
@@ -287,13 +281,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let ul = document.querySelector(".Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
-    allPaths.forEach((pathGroup,) => {
+    allPaths.forEach((pathGroup) => {
       let li = document.createElement("li");
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
-                    <span class="Paths_Distance">${pathGroup.request.lenght.toFixed(1)} km</span>
-                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevationUp}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevationDown}m</span>
+                    <span class="Paths_Distance">${pathGroup.request.radius.toFixed(1)} km</span>
+                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevation.up}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevation.down}m</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
                 <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
