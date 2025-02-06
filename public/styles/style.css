@@ -17,78 +17,195 @@
     -webkit-transform: scale(1, 1);
   }
 }
-nav ul {
+nav {
   display: flex;
-  width: 100%;
-  text-align: center;
-  justify-content: space-between;
-  list-style-type: none;
+  flex-direction: row;
+  flex-shrink: 0;
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  white-space: none;
+  background-color: #4A4A4A;
 }
-nav ul label {
+nav .Tab_Container {
+  display: inline-block;
+  flex: 1 1 0%;
+  padding: 0px 10px;
+  margin: 0px 5px 6px 5px;
   cursor: pointer;
-  margin: auto;
+  outline: none;
+  background-color: white;
+  border-radius: 3px 3px;
 }
-nav ul label li {
-  padding: 1rem 2rem 1.15rem;
-  text-transform: uppercase;
-  color: #ebebeb;
-  min-width: 80px;
-  margin: auto;
+nav .Tab_Container:has(.Tab_Active) {
+  border-radius: 3px 3px 0 0;
+  border-bottom: 3px solid white;
+  margin: 0px 5px;
 }
-nav ul label li:active {
-  transform: translateY(4px);
+nav .Tab_Container .Tab_Active {
+  position: relative;
 }
-nav ul label li:hover, nav ul label li:has(input[type=radio]:checked) {
-  background-image: url("../asset/button.png");
-  background-size: 100% 100%;
-  color: #27262c;
-  animation: spring 300ms ease-out;
-  text-shadow: 0 -1px 0 #ef816c;
-  font-weight: bold;
+nav .Tab_Container .Tab_Active::before {
+  position: absolute;
+  bottom: -5px;
+  left: -16px;
+  width: 6px;
+  height: 6px;
+  content: " ";
+  box-shadow: white 2px 2px 0px;
+  border-bottom-right-radius: 6px;
+  border-width: 0px 1px 1px 0px;
 }
-nav ul label li input {
-  display: none;
+nav .Tab_Container .Tab_Active::after {
+  position: absolute;
+  bottom: -5px;
+  width: 6px;
+  height: 6px;
+  content: " ";
+  right: -16px;
+  box-shadow: white -2px 2px 0px;
+  border-bottom-left-radius: 6px;
+  border-width: 0px 0px 1px 1px;
 }
-nav ul label li input:checked {
-  color: black;
+nav .Tab_Container .Tab_Active .Tab_Number {
+  color: #e9674e !important;
+}
+nav .Tab_Container .Shared_Row {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+}
+nav .Tab_Container .Shared_Row .Tab_Number {
+  font-size: 44px;
+  font-weight: 600;
+  color: #888;
+  margin-right: 10px;
+}
+nav .Tab_Container .Shared_Row .Shared_Column {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  justify-content: center;
+  color: #4a4a4a;
+}
+nav .Tab_Container .Shared_Row .Shared_Column span {
+  font-size: 12px;
+  -webkit-user-select: initial;
+     -moz-user-select: initial;
+          user-select: initial;
+  white-space: nowrap;
+  display: inline-block;
+}
+nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title {
+  font-weight: 600;
+}
+nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
+  font-size: 18px;
 }
 
-.generate {
-  display: none;
-  margin: 2rem 1.6rem;
+@keyframes spring {
+  15% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.2, 1.1);
+  }
+  40% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(0.95, 0.95);
+  }
+  75% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.05, 1);
+  }
+  100% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1, 1);
+  }
 }
-.generate .locationContainer {
-  background-color: #f6f6f6;
+@keyframes spring {
+  15% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.2, 1.1);
+  }
+  40% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(0.95, 0.95);
+  }
+  75% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.05, 1);
+  }
+  100% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1, 1);
+  }
+}
+.Generate {
+  display: none;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+.Generate .WayTypes_Label, .Generate .Elevation_Label, .Generate .Paths_Label, .Generate .Route_Label, .Generate .Precision_Label {
+  margin: 0;
+  font-weight: bold;
+  text-align: left;
+}
+.Generate .WayTypes_Label span, .Generate .Elevation_Label span, .Generate .Paths_Label span, .Generate .Route_Label span, .Generate .Precision_Label span {
+  margin: 0 0 0 0.4rem;
+  float: right;
+}
+.Generate .Button_Container {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px;
+  min-height: 54px;
+}
+.Generate .Parameters_Goals {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0px 30px 15px;
+}
+.Generate .Parameters_Goals ~ .Location_Container, .Generate .Parameters_Goals .Method_Container, .Generate .Parameters_Goals .Distance_Container, .Generate .Parameters_Goals .Elevation_Container, .Generate .Parameters_Goals .WayTypes_Container, .Generate .Parameters_Goals .Nb_Paths_Container, .Generate .Parameters_Goals .Simplification_Container, .Generate .Parameters_Goals .Precision_Container {
+  margin-top: 20px;
+}
+.Generate .Parameters_Goals .Location_Container {
   display: flex;
   align-items: center;
   border-radius: 0.2rem;
-  border: 2px solid rgba(255, 255, 255, 0);
+  border: 2px solid #f6f6f6;
+  background-color: #f6f6f6;
+  outline: none;
 }
-.generate .locationContainer #locationIcon {
+.Generate .Parameters_Goals .Location_Container #Location_Icon {
   position: relative;
   margin: 0px 7px 0px 11px;
   cursor: pointer;
   font-size: 1.5rem;
 }
-.generate .locationContainer #locationField {
-  width: 100%;
+.Generate .Parameters_Goals .Location_Container #Location_Field {
   position: relative;
-}
-.generate .locationContainer #locationField:focus-within {
-  border: 2px solid rgba(255, 255, 255, 0);
-}
-.generate .locationContainer #locationField input {
   width: 100%;
+  border: none;
+}
+.Generate .Parameters_Goals .Location_Container #Location_Field input {
+  width: 100%;
+  padding: 0.6rem 0.6rem;
   -webkit-appearance: none;
      -moz-appearance: none;
           appearance: none;
   border: none;
   outline: none;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions {
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions {
   display: none;
   position: absolute;
-  background-color: #fff;
+  background-color: #ccc;
   border-radius: 4px;
   left: -45px;
   list-style: none;
@@ -98,202 +215,389 @@ nav ul label li input:checked {
   overflow: hidden;
   font-size: 15px;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions li {
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li {
   list-style-position: inside;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions li a {
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li a {
   cursor: default;
   display: block;
   padding: 6px 12px;
   color: #404040;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-title, .generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-address {
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li a .Suggestions_Title, .Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li a .Suggestions_Address {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions li a .suggestions-title {
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li a .Suggestions_Title {
   font-weight: bold;
 }
-.generate .locationContainer #locationField #locationSuggestions #suggestions li.active a {
-  background-color: red;
+.Generate .Parameters_Goals .Location_Container #Location_Field #Location_Suggestions #Suggestions li.active a {
+  background-color: #888;
   text-decoration: none;
   cursor: pointer;
 }
-.generate .locationContainer:focus-within {
+.Generate .Parameters_Goals .Location_Container:focus-within {
   outline: none;
   transition: border 0.2s ease;
-  border: 2px solid red;
+  border: 2px solid #e9674e;
 }
-.generate .locationContainer:focus-within #suggestions {
+.Generate .Parameters_Goals .Location_Container:focus-within #Suggestions {
   display: block !important;
 }
-.generate .distanceContainer, .generate .elevationContainer {
-  display: flex;
-  align-items: center;
-  background-color: #ccc;
-}
-.generate .distanceContainer #distance, .generate .distanceContainer #elevationUp, .generate .distanceContainer #elevationDown, .generate .elevationContainer #distance, .generate .elevationContainer #elevationUp, .generate .elevationContainer #elevationDown {
-  max-width: 50px;
-  text-align: center;
-  font-size: 1.2rem;
-}
-.generate .distanceContainer #distance:focus-within, .generate .distanceContainer #elevationUp:focus-within, .generate .distanceContainer #elevationDown:focus-within, .generate .elevationContainer #distance:focus-within, .generate .elevationContainer #elevationUp:focus-within, .generate .elevationContainer #elevationDown:focus-within {
-  outline: none;
-  transition: border 0.2s ease;
-  border: 2px solid red;
-}
-.generate .distanceContainer #distance:focus-within #suggestions, .generate .distanceContainer #elevationUp:focus-within #suggestions, .generate .distanceContainer #elevationDown:focus-within #suggestions, .generate .elevationContainer #distance:focus-within #suggestions, .generate .elevationContainer #elevationUp:focus-within #suggestions, .generate .elevationContainer #elevationDown:focus-within #suggestions {
-  display: block !important;
-}
-.generate .distanceContainer #elevationContainerUp, .generate .distanceContainer #elevationContainerDown, .generate .elevationContainer #elevationContainerUp, .generate .elevationContainer #elevationContainerDown {
-  display: flex;
-  align-items: center;
-  background-color: #ccc;
-}
-.generate .distanceContainer input[type=number], .generate .elevationContainer input[type=number] {
-  -moz-appearance: textfield;
-}
-.generate .distanceContainer input::-webkit-outer-spin-button,
-.generate .distanceContainer input::-webkit-inner-spin-button, .generate .elevationContainer input::-webkit-outer-spin-button,
-.generate .elevationContainer input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.generate .distanceContainer #distance-units, .generate .distanceContainer .elevation-units, .generate .elevationContainer #distance-units, .generate .elevationContainer .elevation-units {
-  margin-left: 12px;
-  margin-right: 4px;
-  cursor: pointer;
-}
-.generate .methodContainer {
+.Generate .Parameters_Goals .Method_Container {
   display: flex;
   text-align: center;
-  margin: auto;
+  margin: 10px 0;
+  gap: 20px;
+  align-items: center;
 }
-.generate .methodContainer input[type=radio] {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  border: none;
-  outline: none;
-}
-.generate .methodContainer input[type=radio]:checked + label {
-  color: white;
-}
-.generate .methodContainer label {
+.Generate .Parameters_Goals .Method_Container label {
+  color: #000000;
+  padding: 0.75rem 0;
   width: 50%;
+  font-weight: bold;
 }
-.generate #generatePaths {
+.Generate .Parameters_Goals .Method_Container label:active {
+  transform: translateY(4px);
+}
+.Generate .Parameters_Goals .Method_Container label:hover, .Generate .Parameters_Goals .Method_Container label:has(input[type=radio]:checked) {
+  background-image: url("../asset/button.png");
+  background-size: 100% 100%;
+  color: #27262c;
+  animation: spring 300ms ease-out;
+  text-shadow: 0 -1px 0 #ef816c;
+  font-weight: bold;
+}
+.Generate .Parameters_Goals .Method_Container label input {
+  display: none;
+}
+.Generate .Parameters_Goals .Method_Container label input:checked {
+  color: #000000;
+}
+.Generate .Parameters_Goals .Method_Container input[type=radio] {
+  display: none;
+}
+.Generate .Parameters_Goals .Method_Container input[type=radio]:checked + label {
+  transform: scale(1.2);
+}
+.Generate .Parameters_Goals .Method_Container input[type=radio]:not(:checked) + label {
+  opacity: 0.6;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider {
+  position: relative;
+  width: 100%;
+  height: 43px;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider .Slider_Bar {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  top: 10px;
+  height: 1px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider .Slider_Mark {
+  position: absolute;
+  top: 6px;
+  width: 1px;
+  height: 9px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider .Slider_Label {
+  position: absolute;
+  top: 21px;
+  color: #222;
+  line-height: normal;
+  text-align: center;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider .Slider_Handle {
+  position: absolute;
+  top: 0;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #e9674e;
+  border-radius: 100%;
+  background-color: #f6f6f6;
+}
+.Generate .Parameters_Goals .Distance_Container .Route_Slider .Slider_Handle:hover {
+  background-color: #e9674e;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: 15px;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  width: 50%;
+  background-color: #ccc;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up:focus-within, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down:focus-within {
+  border: 2px solid #e9674e;
+  border-radius: 0.2rem;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up i, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down i {
+  margin: auto 0;
+  margin-left: 5px;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up span, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down span {
+  text-align: left;
+  margin: auto 0.6rem;
+  margin-left: 0;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up input[type=number], .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down input[type=number] {
+  -moz-appearance: textfield;
+  display: block;
+  padding: 0.6rem 0.6rem;
+  letter-spacing: -0.025rem;
+  border: 2px solid #ccc;
+  color: black;
+  width: 90%;
+  border-radius: 0.2rem;
+  background-color: #ccc;
+  text-align: right;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up input[type=number]:focus-within, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down input[type=number]:focus-within {
+  border: none;
+  outline: none;
+}
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up input::-webkit-outer-spin-button,
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Up input::-webkit-inner-spin-button, .Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down input::-webkit-outer-spin-button,
+.Generate .Parameters_Goals .Elevation_Container .Elevation_Slider #Elevation_Container_Down input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox input, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio input, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox input, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio input {
+  display: none;
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox label, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio label, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox label, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio label {
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #f8f9fa;
   cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox input:checked + label, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio input:checked + label, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox input:checked + label, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio input:checked + label {
+  background-color: #e9674e;
+  color: #27262c;
+  animation: spring 300ms ease-out;
+  text-shadow: 0 -1px 0 #ef816c;
+  font-weight: bold;
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox label:hover, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio label:hover, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox label:hover, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio label:hover {
+  background-color: #e79282;
+  transform: scale(1.02);
+}
+.Generate .Parameters_Goals .WayTypes_Container .WayTypes_Checkbox input:checked + label:hover, .Generate .Parameters_Goals .WayTypes_Container .Simplification_Radio input:checked + label:hover, .Generate .Parameters_Goals .Simplification_Container .WayTypes_Checkbox input:checked + label:hover, .Generate .Parameters_Goals .Simplification_Container .Simplification_Radio input:checked + label:hover {
+  transform: scale(1.02);
+}
+.Generate .Parameters_Goals .Precision_Container, .Generate .Parameters_Goals .Simplification_Container {
+  display: none;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider {
+  position: relative;
+  width: 100%;
+  height: 43px;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider .Slider_Bar {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  top: 10px;
+  height: 1px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider .Slider_Mark {
+  position: absolute;
+  top: 6px;
+  width: 1px;
+  height: 9px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider .Slider_Label {
+  position: absolute;
+  top: 21px;
+  color: #222;
+  line-height: normal;
+  text-align: center;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider .Slider_Handle {
+  position: absolute;
+  top: 0;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #e9674e;
+  border-radius: 100%;
+  background-color: #f6f6f6;
+}
+.Generate .Parameters_Goals .Precision_Container .Precision_Slider .Slider_Handle:hover {
+  background-color: #e9674e;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider {
+  position: relative;
+  width: 100%;
+  height: 43px;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider .Slider_Bar {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  top: 10px;
+  height: 1px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider .Slider_Mark {
+  position: absolute;
+  top: 6px;
+  width: 1px;
+  height: 9px;
+  background: #222;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider .Slider_Label {
+  position: absolute;
+  top: 21px;
+  color: #222;
+  line-height: normal;
+  text-align: center;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider .Slider_Handle {
+  position: absolute;
+  top: 0;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #e9674e;
+  border-radius: 100%;
+  background-color: #f6f6f6;
+}
+.Generate .Parameters_Goals .Nb_Paths_Container .Paths_Slider .Slider_Handle:hover {
+  background-color: #e9674e;
+}
+.Generate #Generate_Paths {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  background-color: #4A4A4A;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 10px;
+}
+.Generate #Generate_Paths .ActionButton_More_Parameters {
+  padding: 8px 16px;
+  border-radius: 3px;
+  background-color: #e9674e;
+  color: #f6f6f6;
+  cursor: pointer;
+}
+.Generate #Generate_Paths .Action_Actions {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 8px 0px;
+}
+.Generate #Generate_Paths .Action_Actions .ActionButton_Container {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  background-color: #e9674e;
+  color: #f6f6f6;
+  padding: 0 16px;
+  height: 42px;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: 200ms;
+  margin-right: 10px;
+  align-items: center;
+  border-radius: 3px;
+}
+.Generate #Generate_Paths .Action_Actions .ActionButton_Container .ActionButton_Icon {
+  margin-right: 15px;
+}
+.Generate #Generate_Paths .Action_Actions .ActionButton_Container .ActionButton_Icon i {
+  width: 13px;
+  height: 22px;
+}
+.Generate #Generate_Paths .Action_Actions .ActionButton_Container .ActionButton_Text {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.Generate #Generate_Paths .Action_Actions .ActionButton_Container .ActionButton_Text span {
+  font-size: 15px;
+  -webkit-user-select: initial;
+     -moz-user-select: initial;
+          user-select: initial;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+#Confirm_Button {
   margin: auto;
   justify-content: center;
   text-align: center;
   align-items: center;
-  font-size: 1.38rem;
-  padding: 10px;
-  background-color: red;
-  border-radius: 5px;
-}
-.generate #generatePaths:hover {
-  transform: scale(1.05);
-}
-
-.wrapper {
-  position: relative;
-  height: 1rem;
-  width: 20rem;
-}
-.wrapper::before, .wrapper::after {
-  padding: 0 12px;
-  display: block;
-  position: absolute;
-  z-index: 99;
-  color: #fff;
-  width: auto;
-  text-align: center;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0.75rem;
-  pointer-events: none;
-}
-.wrapper::before {
-  content: "1"; /* Minus on the left */
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.wrapper::after {
-  content: "10"; /* Plus on the right */
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-input[type=range] {
-  -webkit-appearance: none;
-  background-color: rgba(255, 255, 255, 0.2);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 1rem;
-  transform: translate(-50%, -50%);
-  border-radius: 1rem;
-  overflow: hidden;
-  cursor: ew-resize;
-}
-input[type=range][step] {
-  background-color: transparent;
-  background-image: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2) calc(10% - 1px), #05051a 10%);
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 0;
-  box-shadow: -20rem 0 0 20rem rgba(255, 255, 255, 0.2);
-}
-input[type=range]::-moz-range-thumb {
-  border: none;
-  width: 0;
-  box-shadow: -20rem 0 0 20rem rgba(255, 255, 255, 0.2);
-}
-
-#confirmBtn {
   margin: 0;
   padding: 10px;
-  justify-content: center;
-  text-align: center;
-  align-items: center;
   border: none;
 }
-#confirmBtn:hover {
+#Confirm_Button:hover {
   cursor: pointer;
   background-color: rgb(197, 196, 196);
   border-radius: 5px;
 }
 
-.leaflet-popup-content-wrapper, .leaflet-popup-tip, #confirmBtn {
+.leaflet-popup-content-wrapper, .leaflet-popup-tip, #Confirm_Button {
   background-color: gray;
 }
 
-.paths {
+@keyframes spring {
+  15% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.2, 1.1);
+  }
+  40% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(0.95, 0.95);
+  }
+  75% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.05, 1);
+  }
+  100% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1, 1);
+  }
+}
+.Paths {
   display: none;
   padding: 16px;
   margin: 2rem 1.6rem;
 }
-.paths h1 {
+.Paths h1 {
   text-transform: uppercase;
   font-size: 1.5rem;
   text-align: center;
   margin-bottom: 20px;
 }
-.paths ul {
+.Paths ul {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 20px;
 }
-.paths ul:empty::before {
+.Paths ul:empty::before {
   content: "No paths";
   color: gray;
   font-size: 1rem;
@@ -301,7 +605,7 @@ input[type=range]::-moz-range-thumb {
   text-align: center;
   padding: 1rem;
 }
-.paths ul li {
+.Paths ul li {
   position: relative;
   cursor: pointer;
   position: relative;
@@ -309,50 +613,70 @@ input[type=range]::-moz-range-thumb {
   background-color: green;
   padding: 10px;
 }
-.paths ul li .fa-trash {
+.Paths ul li .fa-trash {
   position: absolute;
   top: 10px;
   right: 10px;
   opacity: 0;
   visibility: hidden;
 }
-.paths ul li:hover .fa-trash {
+.Paths ul li:hover .fa-trash {
   height: auto;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
 }
-.paths ul li .pathsMeasure {
+.Paths ul li .Paths_Measure {
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   gap: 10px;
   font-size: 1.38rem;
   margin-bottom: 5px;
 }
-.paths ul li .pathsLocation {
+.Paths ul li .Paths_Location {
   font-size: 1rem;
 }
-.paths ul li .pathsNumber {
+.Paths ul li .Paths_Number {
   position: absolute;
   bottom: 5px;
   right: 10px;
 }
 
-.listOfSelectedPaths {
+@keyframes spring {
+  15% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.2, 1.1);
+  }
+  40% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(0.95, 0.95);
+  }
+  75% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1.05, 1);
+  }
+  100% {
+    -webkit-transform-origin: center center;
+    -webkit-transform: scale(1, 1);
+  }
+}
+.List_Of_Selected_Paths {
   display: none;
   padding: 16px;
   flex-direction: column;
   gap: 20px;
 }
-.listOfSelectedPaths .liContainer {
+.List_Of_Selected_Paths .Li_Container {
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   counter-increment: childIndex;
 }
-.listOfSelectedPaths .liContainer.active .exportContainer {
+.List_Of_Selected_Paths .Li_Container.active .Export_Container {
   display: block;
 }
-.listOfSelectedPaths .liContainer::before {
+.List_Of_Selected_Paths .Li_Container::before {
   content: counter(childIndex) ". ";
   color: gray;
   font-weight: bold;
@@ -364,10 +688,10 @@ input[type=range]::-moz-range-thumb {
   width: 20px;
   height: 20px;
 }
-.listOfSelectedPaths .liContainer .pathContainer {
+.List_Of_Selected_Paths .Li_Container .Path_Container {
   width: 100%;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result {
   padding: 10px;
   font-size: 1.38rem;
   background-color: red;
@@ -375,38 +699,44 @@ input[type=range]::-moz-range-thumb {
   border-radius: 10px;
   border-top-left-radius: 0px;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .distance-elevationContainer {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Distance_Elevation_Container {
   display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
   gap: 30px;
   margin: auto;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .distanceContainer, .listOfSelectedPaths .liContainer .pathContainer .pathResult .elevationUp, .listOfSelectedPaths .liContainer .pathContainer .pathResult .elevationDown {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Distance_Container, .List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Elevation_Up, .List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Elevation_Down {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   text-align: center;
   align-items: center;
   justify-items: center;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   left: 0px;
   color: #737373;
   font-weight: 600;
   font-size: 1.38rem;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .wayTypeTitle {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .WayType_Title {
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .wayTypeTitle .wayTypeIcon {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .WayType_Title .WayType_Icon {
   height: 1.68rem;
   margin-right: 10px;
   color: wheat;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface {
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   width: 100%;
   height: 20px;
   white-space: nowrap;
@@ -414,40 +744,40 @@ input[type=range]::-moz-range-thumb {
   margin-top: 15px;
   margin-bottom: 5px;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .Surface_Element {
   width: 100%;
   height: 100%;
   display: inline-block;
   transition: 200ms transform;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:hover {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .Surface_Element:hover {
   transform: scale(1.05);
   box-shadow: white;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:first-child {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .Surface_Element:first-child {
   border-top-left-radius: 4px;
   border-bottom-left-radius: 4px;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .surfaceElement:last-child {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .Surface_Element:last-child {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a1 {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .a1 {
   background-color: red;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a2 {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .a2 {
   background-color: blue;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a3 {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .a3 {
   background-color: yellow;
 }
-.listOfSelectedPaths .liContainer .pathContainer .pathResult .surfaceContainer .surface .a4 {
+.List_Of_Selected_Paths .Li_Container .Path_Container .Path_Result .Surface_Container .Surface .a4 {
   background-color: green;
 }
-.listOfSelectedPaths .liContainer .exportContainer {
+.List_Of_Selected_Paths .Li_Container .Export_Container {
   display: none;
 }
-.listOfSelectedPaths .liContainer .exportContainer .accordionTitle {
+.List_Of_Selected_Paths .Li_Container .Export_Container .Accordion_Title {
   background-color: #eee;
   color: #444;
   cursor: pointer;
@@ -458,20 +788,20 @@ input[type=range]::-moz-range-thumb {
   outline: none;
   transition: 0.4s;
 }
-.listOfSelectedPaths .liContainer .exportContainer .active, .listOfSelectedPaths .liContainer .exportContainer .accordionTitle:hover {
+.List_Of_Selected_Paths .Li_Container .Export_Container .active, .List_Of_Selected_Paths .Li_Container .Export_Container .Accordion_Title:hover {
   background-color: #ccc;
 }
-.listOfSelectedPaths .liContainer .exportContainer .accordionTitle:after {
+.List_Of_Selected_Paths .Li_Container .Export_Container .Accordion_Title:after {
   content: "+";
   color: #777;
   font-weight: bold;
   float: right;
   margin-left: 5px;
 }
-.listOfSelectedPaths .liContainer .exportContainer .active:after {
+.List_Of_Selected_Paths .Li_Container .Export_Container .active:after {
   content: "−";
 }
-.listOfSelectedPaths .liContainer .exportContainer .accordionText {
+.List_Of_Selected_Paths .Li_Container .Export_Container .Accordion_Text {
   padding: 0 18px;
   background-color: white;
   max-height: 0;
@@ -489,27 +819,6 @@ input[type=range]::-moz-range-thumb {
   letter-spacing: -0.025rem;
 }
 
-input[type=email],
-input[type=text],
-input[type=number],
-input[type=password],
-input[type=month],
-input[type=week],
-input[type=datetime],
-input[type=datetime-local],
-input[type=url],
-input[type=search],
-input[type=tel],
-input:not([type]) {
-  display: block;
-  padding: 0.6rem 0.6rem;
-  letter-spacing: -0.025rem;
-  border: 2px solid #ccc;
-  color: black;
-  border-radius: 0.2rem;
-  background-color: #ccc;
-}
-
 body {
   margin: 0;
   display: flex;
@@ -518,25 +827,25 @@ body {
   font-family: Arial, sans-serif;
 }
 
-#sidebar {
+#Side_Bar {
   width: 25%;
-  background: #1E1F25;
+  background: #f6f6f6;
   overflow-y: auto;
   border-right: 1px solid #ccc;
 }
 
-#map {
+#Map {
   flex: 1;
   position: relative;
 }
 
-#elevationGraph {
+#Elevation_Graph {
   position: absolute;
   bottom: 0;
   left: 25%;
   width: 75%;
   height: 150px;
-  background: white;
+  background: #f6f6f6;
 }
 
 ul {

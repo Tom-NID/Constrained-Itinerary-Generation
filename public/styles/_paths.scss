@@ -1,7 +1,7 @@
 @import "./function";
 @import "./variables";
 
-.paths {
+.Paths {
   display: none;
   padding: 16px;
   margin: 2rem 1.6rem;
@@ -14,8 +14,7 @@
   }
   
   ul {
-    display: flex;
-    flex-direction: column;
+    @include displayFlex(column);
     gap: 20px;
     
     &:empty::before {
@@ -50,19 +49,18 @@
       background-color: green;
       padding: 10px;
       
-      .pathsMeasure {
-        display: flex;
-        flex-direction: row;
+      .Paths_Measure {
+        @include displayFlex(row);
         gap: 10px;
         font-size: 1.38rem;
         margin-bottom: 5px;
       }
       
-      .pathsLocation {
+      .Paths_Location {
         font-size: 1rem;
       }
       
-      .pathsNumber {
+      .Paths_Number {
         position: absolute;
         bottom: 5px;
         right: 10px;

@@ -5,23 +5,30 @@ document.addEventListener("DOMContentLoaded", () => {
   let lng;
   let timeout = null; 
   let suggestionsList;
-  let currSlide = document.querySelector(`.${document.querySelector("input[type='radio']:checked").value}`);
   let allPaths = [];
-  
-  const map = L.map('map').setView([51.505, -0.09], 13);
+  const maxLength = 50;
+
+  const map = L.map('Map').setView([51.505, -0.09], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
   L.control.zoom({ position: 'topright' }).addTo(map);
   
+  window.addEventListener("resize", () => {
+    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 5, 50);
+    updateSliderMarBel(document.querySelector(".Nb_Paths_Container"), "", 1, 10);
+    updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
+  });
+
   updatePathsViewer();
   initSlide();
-  
+  initSliderLengthInput();
+
   map.on("click", (e) => {
     let lat = e.latlng.lat;
     let lng = e.latlng.lng;
     
-    let popupContent = `<button id="confirmBtn">Set as start point</button>`;
+    let popupContent = `<button id="Confirm_Button">Set as start point</button>`;
     
     L.popup()
     .setLatLng([lat, lng])
@@ -29,8 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
     .openOn(map);
     
     setTimeout(() => {
-      document.getElementById("confirmBtn").addEventListener("click", () => {
-        showMain("generate");
+      document.getElementById("Confirm_Button").addEventListener("click", () => {
+        showMain("Generate");
         map.closePopup(); 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
         .then(res => res.json())
@@ -41,18 +48,18 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }, 100);
   });
-
-  document.getElementById("listOfSelectedPathsBack").addEventListener("click", () => {
-    showMain("paths");
+  
+  document.getElementById("List_Of_Selected_Paths_Back").addEventListener("click", () => {
     updatePathsViewer();
-  });
-
-  document.getElementById("showAllSelectedPaths").addEventListener("click", () => {
-    showMain("listOfSelectedPaths");
-
+    updateMainContentWithArgument("Route");
+    updateListOfSelectedPath(false);
   });
   
-  document.getElementById("locationInput").addEventListener("input", (event) => {
+  // document.getElementById("Show_All_Selected_Paths").addEventListener("click", () => {
+  //   showMain("List_Of_Selected_Paths");
+  // });
+  
+  document.getElementById("Location_Input").addEventListener("input", (event) => {
     clearTimeout(timeout);
     let query = event.target.value.trim();
     
@@ -70,18 +77,27 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(error => console.error("Error fetching locations:", error));
     }, 500);
   });
-  
-  document.getElementById("locationInput").addEventListener("keydown", (event) => {
-    if (!suggestionsList) return;
-    let items = document.querySelectorAll("#suggestions li");
-    if (!items.length) return;
 
+  document.querySelector(".ActionButton_More_Parameters").addEventListener("click", () => {
+    let simplification = document.querySelector(".Simplification_Container");
+    simplification.style.display = simplification.style.display === "grid" ? "none" : "grid";
+    let precision = document.querySelector(".Precision_Container");
+    precision.style.display = precision.style.display === "block" ? "none" : "block";
+    updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
+    
+  });
+  
+  document.getElementById("Location_Input").addEventListener("keydown", (event) => {
+    if (!suggestionsList) return;
+    let items = document.querySelectorAll("#Suggestions li");
+    if (!items.length) return;
+    
     const actions = {
       ArrowDown: () => {selectedIndex = (selectedIndex + 1) % items.length},
       ArrowUp: () => {selectedIndex = (selectedIndex - 1 + items.length) % items.length},
       Enter: () => {selectedIndex >= 0 && items[selectedIndex] && drawLocation(suggestionsList[selectedIndex])},
     };
-
+    
     if (actions[event.key]) {
       event.preventDefault();
       actions[event.key]();
@@ -89,21 +105,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
-  document.getElementById("generatePaths").addEventListener("click", () => {
+  document.querySelector(".ActionButton_Container").addEventListener("click", () => {
     if (!lat || !lng) {
       console.log("Error : No Latitude or Longitude");
       return; 
     }
-    const radius = parseInt(document.getElementById("distance").value * 1000);
-    const maxPaths = parseInt(document.getElementById("nbPaths").value / 10);
-    const method = document.querySelector(".methodContainer input:checked").value;
-    const terrain = ["hard", "semi-hard"];
+    
+    const radius = parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000);
+    const maxPaths = parseInt(document.querySelector(".Paths_Slider .Slider_Handle").value);
+    const method = document.querySelector(".Method_Container input:checked").value;
+    const terrain = Array.from(document.querySelectorAll(".WayTypes_Checkbox input:checked")).map((checkbox) => checkbox.value);
+    const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
+    const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
     sock.emit("request", {
       startingPoint : {lat : lat, lng : lng},
       radius : radius,
       maxPaths : maxPaths,
       method: method, 
       terrain: terrain,
+      elevation: {up: elevationUp, down: elevationDown},
       precision: 1,
       simplificationMode: "intersection",
     }); 
@@ -116,21 +136,78 @@ document.addEventListener("DOMContentLoaded", () => {
         lenght: 20,
         elevationUp: 500,
         elevationDown: 500,
-        wayType: {
-          "hard": 50,
-          "semi-hard": 25,
-          "semi-soft": 10,
-          "soft": 15,
-        },
+        wayType: ["hard", "semi-soft"],
         name: "Radd, Laupin, Vielank, Dömitz-Malliß, Ludwigslust-Parchim, Mecklenburg-Vorpommern, 19303, Germany",
       },
       response : res,
     }
     allPaths.push(pathsGroup);
   });
+
+  function updateSliderMarBel(div, unit, min, max, start = -1) {
+    const handle = div.querySelector(".Slider_Handle");
+    const span = div.querySelector(".Route_Label span") || div.querySelector(".Paths_Label span") || div.querySelector(".Precision_Label span");
+    const bar = div.querySelector(".Slider_Bar");
+    const marBels = div.querySelectorAll(".Slider_Container_MarBel");
+    let isDragging = false;
+    
+    const ratio = max / bar.offsetWidth;
+    const sliderRect = bar.getBoundingClientRect();
+    const minLeft = bar.offsetWidth / max * min;
+    const maxLeft = bar.offsetWidth;
+    const avgLeft = (start === -1) ? (maxLeft - minLeft) / 2 : start * ratio + minLeft;
+    
+    let left = 10;
+    let step = maxLeft / 5;
+    marBels.forEach((marBel, index) => {
+      marBel.querySelector(".Slider_Mark").style.left = left + "px";
+      let label = marBel.querySelector(".Slider_Label");
+      label.style.left = left + "px";
+      label.style.marginLeft = `-${Number(index * max / 5).toString().length * 4}px`;
+      label.innerHTML = Number(index * max / 5);
+      left += step;
+    });
+
+    handle.style.left = `${Math.floor(avgLeft)}px`;
+    
+    let nb = Math.ceil(ratio * avgLeft);
+    handle.value = nb;
+    span.innerHTML = nb + unit;
+    
+    handle.addEventListener("mousedown", function (event) {
+      isDragging = true;
+      event.preventDefault();
+      div.addEventListener("mousemove", onMouseMove);
+      div.addEventListener("mouseup", onMouseUp);
+    });
+    
+    function onMouseMove(event) {
+      if (!isDragging) return;
+      let newLeft = event.clientX - sliderRect.left - Number(handle.offsetWidth) / 2;
+      
+      newLeft = Math.floor(Math.max(minLeft, Math.min(newLeft, maxLeft)));
+      handle.style.left = newLeft + "px";
+      
+      let nb = Math.ceil(ratio * newLeft);
+      handle.value = nb;
+      span.innerHTML = nb + unit;
+    }
+    
+    function onMouseUp() {
+      isDragging = false;
+      div.removeEventListener("mousemove", onMouseMove);
+      div.removeEventListener("mouseup", onMouseUp);
+    }
+  }
+  
+  function initSliderLengthInput() {
+    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 5, 50);
+    updateSliderMarBel(document.querySelector(".Nb_Paths_Container"), "", 1, 10);
+    updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
+  }
   
   function showMain(str) {
-    let listOfItems = ["generate", "paths", "listOfSelectedPaths"];
+    let listOfItems = ["Generate", "Paths", "List_Of_Selected_Paths"];
     if (!str || !listOfItems.includes(str)) return;
     listOfItems.forEach(item => {
       document.querySelector(`.${item}`).style.display = (str === item) ? "block" : "none";
@@ -146,17 +223,50 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function initSlide() {
-    document.querySelectorAll("input[type='radio']").forEach(input => {
-      input.addEventListener('change', () => {
-        showMain("generate");
-        currSlide.style.display = 'none';
-        currSlide = document.querySelector(`.${document.querySelector("input[type='radio']:checked").value}`);
-        if (currSlide.classList.contains("paths")) updatePathsViewer;
-        currSlide.style.display = 'block';
+    document.querySelectorAll(".Tab_Container").forEach(input => {
+      input.addEventListener('click', () => {
+        updateListOfSelectedPath(false);
+        updateMainContentWithArgument(input.firstElementChild.id);
+        if (input.firstElementChild.id == "Route") {
+          updatePathsViewer();
+        }
       });
-      input.style.display = 'none';
     });
-    currSlide.style.display = 'block';
+    updateMainContent();
+  }
+  
+  function updateListOfSelectedPath(display) {
+    document.querySelector("main").style.display = display ? "none" : "block";
+    document.querySelector(".List_Of_Selected_Paths").style.display = display ? "block" : "none";
+  }
+  
+  function updateMainContent() {
+    const activeTab = document.querySelector(".Tab_Active .Tab_Title span");
+    const generateDiv = document.querySelector(".Generate");
+    const pathsDiv = document.querySelector(".Paths");
+    
+    if (activeTab && activeTab.textContent.trim() === "Goals") {
+      generateDiv.style.display = "flex";
+      pathsDiv.style.display = "none";
+    } else {
+      generateDiv.style.display = "none";
+      pathsDiv.style.display = "block";
+    }
+  }
+  
+  function updateMainContentWithArgument(str) {
+    let activeTab = document.querySelector(".Tab_Active");
+    if (activeTab.id != str) {
+      activeTab.classList.toggle("Tab_Active");
+      activeTab.classList.add("Tab_Not_Active");
+      
+      activeTab = document.getElementById(str);
+      activeTab.classList.add("Tab_Active");
+      
+      activeTab.classList.remove("Tab_Not_Active");
+    }
+    
+    updateMainContent();
   }
   
   function updateSelection(items) {
@@ -174,19 +284,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return partsAsRoad.slice(-2).join(", ") + "," + partsAsCity.length > 1 ? partsAsCity.slice(0, 2).join(" ") : displayName;
     }
     
-    let ul = document.querySelector(".paths ul");
+    let ul = document.querySelector(".Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
     allPaths.forEach((pathGroup,) => {
       let li = document.createElement("li");
+      // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
-                <i class="fa-solid fa-trash"></i>
-                <div class="pathsMeasure">
-                    <span class="pathsDistance">${pathGroup.request.lenght.toFixed(1)} km</span>
-                    <span class="pathsElevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevationUp}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevationDown}m</span>
+                <div class="Paths_Measure">
+                    <span class="Paths_Distance">${pathGroup.request.lenght.toFixed(1)} km</span>
+                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevationUp}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevationDown}m</span>
                 </div>
-                <span class="pathsLocation"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
-                <span class="pathsNumber">Number of paths : ${pathGroup.response.paths.length}</span>
+                <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
+                <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
             `;
       
       ul.appendChild(li);
@@ -204,12 +314,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return parts.slice(-2).join(", ");
     }
     
-    let ul = document.getElementById("suggestions");
+    let ul = document.getElementById("Suggestions");
     if (!ul || !list) return;
     
     ul.innerHTML = list.map(elem => 
-      `<li><a><div class="suggestions-title">${formatAddressAsRoad(elem.display_name)}</div>
-            <div class="suggestions-address">${formatAddressAsCity(elem.display_name)}</div></a></li>`
+      `<li><a><div class="Suggestions_title">${formatAddressAsRoad(elem.display_name)}</div>
+            <div class="Suggestions_address">${formatAddressAsCity(elem.display_name)}</div></a></li>`
     ).join("");
     
     [...ul.children].forEach((li, i) => li.addEventListener("click", () => drawLocation(list[i])));
@@ -222,13 +332,13 @@ document.addEventListener("DOMContentLoaded", () => {
     lat = data.lat;
     lng = data.lon;
     
-    document.getElementById("suggestions").innerHTML = '';
+    document.getElementById("Suggestions").innerHTML = '';
     clearLayers();
     
     L.marker([data.lat, data.lon]).addTo(map).openPopup();
     map.setView([data.lat, data.lon], 17);
     
-    document.getElementById('locationInput').value = data.display_name;
+    document.getElementById('Location_Input').value = data.display_name;
   }
   
   function displayPath(coordinates, color, opacity, length) {
@@ -240,40 +350,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }  
   
   function drawSelectedPaths(res) {
-    document.getElementById("rad2").click();
-    showMain("listOfSelectedPaths");
-    let ul = document.querySelector(".listOfSelectedPaths ul");
+    updateMainContentWithArgument("Route");
+    updateListOfSelectedPath(true);
+    
+    let ul = document.querySelector(".List_Of_Selected_Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
     res.paths.forEach((path) => {
       let li = document.createElement("li");
-      li.classList.add("liContainer");
+      li.classList.add("Li_Container");
       li.innerHTML = `
-                <div class="pathContainer">
-                    <div class="pathResult">
-                        <div class="distance-elevationContainer">
-                            <span class="distanceContainer">
+                <div class="Path_Container">
+                    <div class="Path_Result">
+                        <div class="Distance_Elevation_Container">
+                            <span class="Distance_Container">
                                 <i class="fa-solid fa-arrows-left-right"></i> ${(path.length / 1000).toFixed(1)} km
                             </span>
-                            <span class="elevationUp"><i class="fa-solid fa-arrow-trend-up"></i>TODO</span>
-                            <span class="elevationDown"><i class="fa-solid fa-arrow-trend-down"></i>TODO</span>
+                            <span class="Elevation_Up"><i class="fa-solid fa-arrow-trend-up"></i>TODO</span>
+                            <span class="Elevation_Down"><i class="fa-solid fa-arrow-trend-down"></i>TODO</span>
                         </div> TODO WAY TYPES` + 
-      // <div class="surfaceContainer">
-      //     <div class="wayTypeTitle">
-      //         <img class="wayTypeIcon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png"> Way types
+      // <div class="Surface_Container">
+      //     <div class="WayType_Title">
+      //         <img class="WayType_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png"> Way types
       //     </div>
-      //     <div class="surface">
-      //         <div class="surfaceElement a1" style="width: 94.30%;"></div>
-      //         <div class="surfaceElement a2" style="width: 5.70%;"></div>
+      //     <div class="Surface">
+      //         <div class="Surface_Element a1" style="width: 94.30%;"></div>
+      //         <div class="Surface_Element a2" style="width: 5.70%;"></div>
       //     </div>
       // </div>
       
       `</div>
-                    <div class="exportContainer">
+                    <div class="Export_Container">
                         <span><i class="fa-solid fa-share-nodes"></i> Generate share link</span>
-                        <div class="accordionContainer">
-                            <button class="accordionTitle">Export Options</button>
-                            <div class="accordionText">
+                        <div class="Accordion_Container">
+                            <button class="Accordion_Title">Export Options</button>
+                            <div class="Accordion_Text">
                                 <ul>
                                     <li><span>Open in Google Maps</span></li>
                                     <li><span>Open in Komoot</span></li>
@@ -308,10 +419,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function accordion() {
-  document.querySelectorAll(".accordionTitle").forEach(element => {
+  document.querySelectorAll(".Accordion_Title").forEach(element => {
     element.addEventListener("click", function(event) {
       event.stopPropagation();
-      this.classList.toggle("active");
+      this.classList.toggle("Active");
       var accordionText = this.nextElementSibling;
       if (accordionText.style.maxHeight) {
         accordionText.style.maxHeight = null;
