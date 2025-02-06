@@ -112,13 +112,6 @@ export default class Graph {
     }
     return copy;
   }
-  //   getCoordinates(nodeId) {
-  //     if (this.hasNode(nodeId)) {
-  //       const node = this.#nodes.get(nodeId);
-  //       return [node.getLat(), node.getLon()];
-  //     }
-  //     return null;
-  //   }
 
   getClosestNode(lat, lon) {
     let minDistance = Infinity;
@@ -193,37 +186,6 @@ export default class Graph {
     return d * 1000; // meters
   }
 
-  // simplifyGraph(distanceLimit) {
-  //   let nodesToMerge = new Map();
-  //   for (const [nodeId, node] of this.#nodes) {
-  //     let closestNodeId = this.getClosestNodeById(nodeId);
-  //     const distance = this.getHaversineDistance(nodeId, closestNodeId);
-  //     if (distance < distanceLimit && !nodesToMerge.has(nodeId)) {
-  //       nodesToMerge.set(nodeId, closestNodeId);
-  //     }
-  //   }
-  //   for (const [toRemove, closest] of nodesToMerge) {
-  //     let neighbors = this.getNeighbors(toRemove);
-  //     for (const neighborId of neighbors) {
-  //       if (!nodesToMerge.has(neighborId)) {
-  //         let cost = new Cost(
-  //           this.getEuclideanCost(toRemove, closest) +
-  //             this.getEuclideanCost(toRemove, neighborId),
-  //           this.getHaversineCost(toRemove, closest) +
-  //             this.getHaversineCost(toRemove, neighborId),
-  //           "hard"
-  //         );
-
-  //         this.addEdge(closest, neighborId, cost);
-  //       }
-  //     }
-  //     for (const [nodeId, node] of this.#nodes) {
-  //       node.removeEdge(toRemove);
-  //     }
-  //     this.removeNode(toRemove);
-  //   }
-  // }
-
   simplifyGraph(distanceLimit) {
     let nodesToRemove = [];
     let nodesToMerge = [];
@@ -251,40 +213,6 @@ export default class Graph {
       this.removeNode(toRemove);
     }
   }
-
-  // simplifyGraph(distanceLimit) {
-  //   let nodesToMerge = new Map();
-  //   for (const [nodeId, node] of this.#nodes) {
-  //     let closestNodeId = this.getClosestNodeById(nodeId);
-  //     const distance = this.getHaversineDistance(nodeId, closestNodeId);
-  //     if (distance < distanceLimit && !nodesToMerge.values().includes(nodeId)) {
-  //       nodesToMerge.set(nodeId, closestNodeId);
-  //     }
-  //   }
-
-  //   for (const [toRemove, closest] of nodesToMerge) {
-  //     let neighbors = this.getNeighbors(toRemove);
-  //     for (const neighborId of neighbors) {
-  //       if (!nodesToMerge.has(neighborId)) {
-  //         let cost = new Cost(
-  //           this.getEuclideanCost(toRemove, closest) +
-  //             this.getEuclideanCost(toRemove, neighborId),
-  //           this.getHaversineCost(toRemove, closest) +
-  //             this.getHaversineCost(closest, neighborId), // Corrected line
-  //           "hard"
-  //         );
-
-  //         this.addEdge(closest, neighborId, cost);
-  //       }
-  //     }
-
-  //     // Remove the node and then its edges
-  //     this.removeNode(toRemove);
-  //     for (const [nodeId, node] of this.#nodes) {
-  //       node.removeEdge(toRemove);
-  //     }
-  //   }
-  // }
 
   /**
    * Revoie tous les points autour du perimetre d'un cercle (+-1% du rayon)

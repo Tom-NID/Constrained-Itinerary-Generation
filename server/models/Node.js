@@ -1,21 +1,15 @@
 export default class Node {
-  //   #id;
   #lat;
   #lon;
   #alt;
   #edges;
 
   constructor(lat = 0, lon = 0) {
-    // this.#id = nodeId;
     this.#lat = lat;
     this.#lon = lon;
     this.#alt = null;
     this.#edges = new Map();
   }
-
-  //   getId() {
-  //     return this.#id;
-  //   }
 
   getLat() {
     return this.#lat;
@@ -49,10 +43,6 @@ export default class Node {
     this.#edges.delete(otherId);
   }
 
-  getEdges() {
-    return this.#edges;
-  }
-
   countEdges() {
     return this.#edges.size;
   }
@@ -60,28 +50,6 @@ export default class Node {
   getNeighbors() {
     return this.#edges.keys();
   }
-
-  //   getEuclideanDistance(other) {
-  //     return Math.sqrt(
-  //       Math.pow(this.#lat - other.getLat, 2) +
-  //         Math.pow(this.#lon - other.getLon(), 2)
-  //     );
-  //   }
-
-  //   getHaversineDistance(other) {
-  //     var R = 6378.137; // Radius of earth in KM
-  //     var dLat = (other.getLat() * Math.PI) / 180 - (this.#lat * Math.PI) / 180;
-  //     var dLon = (other.getLon() * Math.PI) / 180 - (this.#lon * Math.PI) / 180;
-  //     var a =
-  //       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-  //       Math.cos((this.#lat * Math.PI) / 180) *
-  //         Math.cos((other.getLat() * Math.PI) / 180) *
-  //         Math.sin(dLon / 2) *
-  //         Math.sin(dLon / 2);
-  //     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  //     var d = R * c;
-  //     return d * 1000; // meters
-  //   }
 
   getCost(otherId) {
     return this.#edges.get(otherId);

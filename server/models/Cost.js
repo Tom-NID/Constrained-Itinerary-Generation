@@ -29,6 +29,10 @@ export default class Cost {
     this.#haversineDistance = distance;
   }
 
+  setSurfaceType(surface) {
+    this.#surfateType = surface;
+  }
+
   clone() {
     const copy = new Cost(
       this.#euclideanDistance,
