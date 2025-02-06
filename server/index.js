@@ -553,7 +553,7 @@ io.on("connection", function (socket) {
 
     console.timeEnd("Generation paths");
 
-    sock.emit("result", {
+    socket.emit("result", {
       request: request,
       response: {
         startingNode: graph.getNodeCoordinates(startingNodeId),
