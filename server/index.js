@@ -52,7 +52,7 @@ function getGraph(graph, ways, nodeWayCounts, simplificationMode, queryData) {
       {
         lat: queryData.startingPoint.lat,
         lon: queryData.startingPoint.lng,
-      }
+      },
     );
   }
 
@@ -165,7 +165,8 @@ function getGraph(graph, ways, nodeWayCounts, simplificationMode, queryData) {
       // Conserve uniquement les intersections desirees
       element.nodes = element.nodes.filter(
         (nodeId) =>
-          nodeWayCounts.get(nodeId) >= intersectionSize && graph.hasNode(nodeId)
+          nodeWayCounts.get(nodeId) >= intersectionSize &&
+          graph.hasNode(nodeId),
       );
 
       if (simplificationMode === "way-simplification") {
@@ -238,7 +239,7 @@ async function processData(
   fullGraph,
   intersectionGraph,
   waySimplifiedGraph,
-  simplifiedGraph
+  simplifiedGraph,
 ) {
   const nodeWayCounts = new Map();
 
@@ -268,7 +269,7 @@ async function processData(
     data.elements,
     nodeWayCounts,
     "intersection",
-    queryData
+    queryData,
   );
   console.timeEnd("Intersection graph");
   // } else if (queryData.simplificationMode === "way-simplification") {
@@ -278,7 +279,7 @@ async function processData(
     data.elements,
     nodeWayCounts,
     "way-simplification",
-    queryData
+    queryData,
   );
   console.timeEnd("Way-simplification graph");
   // } else if (queryData.simplificationMode === "graph-simplification") {
@@ -288,7 +289,7 @@ async function processData(
     data.elements,
     nodeWayCounts,
     "graph-simplification",
-    queryData
+    queryData,
   );
   console.timeEnd("Graph-simplification graph");
   // }
@@ -297,28 +298,28 @@ async function processData(
     "full: \n\tnodes: ",
     fullGraph.countNodes(),
     "\n\tedges: ",
-    fullGraph.countEdges()
+    fullGraph.countEdges(),
   );
 
   console.log(
     "intersection: \n\tnodes: ",
     intersectionGraph.countNodes(),
     "\n\tedges: ",
-    intersectionGraph.countEdges()
+    intersectionGraph.countEdges(),
   );
 
   console.log(
     "way-simplification: \n\tnodes: ",
     waySimplifiedGraph.countNodes(),
     "\n\tedges: ",
-    waySimplifiedGraph.countEdges()
+    waySimplifiedGraph.countEdges(),
   );
 
   console.log(
     "graph-simplification: \n\tnodes: ",
     simplifiedGraph.countNodes(),
     "\n\tedges: ",
-    simplifiedGraph.countEdges()
+    simplifiedGraph.countEdges(),
   );
 }
 
@@ -332,7 +333,7 @@ async function fetchData(
   fullGraph,
   intersectionGraph,
   waySimplifiedGraph,
-  simplifiedGraph
+  simplifiedGraph,
 ) {
   try {
     const result = await fetch("https://overpass-api.de/api/interpreter", {
@@ -347,7 +348,7 @@ async function fetchData(
       fullGraph,
       intersectionGraph,
       waySimplifiedGraph,
-      simplifiedGraph
+      simplifiedGraph,
     );
   } catch (err) {
     console.error("Error: ", err);
@@ -365,6 +366,7 @@ io.on("connection", function (socket) {
   let method = "";
   let terrain = [];
   let simplificationMode = "";
+  let request = {};
 
   // data
   let graph = new Graph();
@@ -375,6 +377,7 @@ io.on("connection", function (socket) {
   let startingNodeId = -1;
 
   socket.on("request", async (data) => {
+    request = data;
     console.log(data);
     terrain = data.terrain;
 
@@ -408,7 +411,7 @@ io.on("connection", function (socket) {
         fullGraph,
         intersectionGraph,
         waySimplifiedGraph,
-        simplifiedGraph
+        simplifiedGraph,
       );
     }
 
@@ -442,7 +445,7 @@ io.on("connection", function (socket) {
       "graph: \n\tnodes: ",
       graph.countNodes(),
       "\n\tedges: ",
-      graph.countEdges()
+      graph.countEdges(),
     );
 
     originLat = data.startingPoint.lat;
@@ -466,7 +469,7 @@ io.on("connection", function (socket) {
         precision,
         searchRadius,
         maxPaths,
-        terrain
+        terrain,
       );
     } else if (method === "circuit") {
       paths = graph.getCircuitAStar(
@@ -474,7 +477,7 @@ io.on("connection", function (socket) {
         precision,
         searchRadius / 2,
         maxPaths,
-        terrain
+        terrain,
       );
     }
 
@@ -488,7 +491,6 @@ io.on("connection", function (socket) {
     }));
 
     // Reconstruct the paths based on the full graph
-    // TODO remove dead ends
     // if (simplificationMode !== "full") {
     paths.forEach((path) => {
       let completePath = [];
@@ -507,7 +509,7 @@ io.on("connection", function (socket) {
         for (let j = 1; j < completePath.length; ++j) {
           let sectionDistance = fullGraph.getHaversineCost(
             completePath[j - 1],
-            completePath[j]
+            completePath[j],
           );
           currLength += sectionDistance;
           if (currLength >= length) {
@@ -518,7 +520,7 @@ io.on("connection", function (socket) {
                 : j - 1; // Minimise la difference entre currLength et radius
             completePath = completePath.slice(0, index + 1);
             path.endingNode = fullGraph.getNodeCoordinates(
-              completePath[completePath.length - 1]
+              completePath[completePath.length - 1],
             );
             break;
           }
@@ -526,13 +528,11 @@ io.on("connection", function (socket) {
         console.log("currLength: ", currLength);
       }
 
-      // console.log(completePath);
-
       // Get the different surfaces of the path
       let pathSurface = [];
       for (let i = 1; i < completePath.length; ++i) {
         pathSurface.push(
-          fullGraph.getSurfaceType(completePath[i - 1], completePath[i])
+          fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
         );
       }
 
@@ -542,7 +542,7 @@ io.on("connection", function (socket) {
 
       // Replace the node Ids by coordinates
       completePath = completePath.map((nodeId) =>
-        fullGraph.getNodeCoordinates(nodeId)
+        fullGraph.getNodeCoordinates(nodeId),
       );
 
       path.path = completePath;
@@ -553,9 +553,12 @@ io.on("connection", function (socket) {
 
     console.timeEnd("Generation paths");
 
-    socket.emit("result", {
-      startingNode: graph.getNodeCoordinates(startingNodeId),
-      paths: paths,
+    sock.emit("result", {
+      request: request,
+      response: {
+        startingNode: graph.getNodeCoordinates(startingNodeId),
+        paths: paths,
+      },
     });
 
     graph.clear();
@@ -567,7 +570,7 @@ io.on("connection", function (socket) {
       completePath.push(
         ...fullGraph
           .aStar(simplifiedPath[i - 1], simplifiedPath[i], terrain)
-          .slice(1)
+          .slice(1),
       );
     }
     return completePath;
