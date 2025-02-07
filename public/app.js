@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let timeout = null; 
   let suggestionsList;
   let allPaths = [];
+  let colorList = ["#525445", "#34796a", "#276460", "#25484f", "#28333c", "#1f2731", "#010102"]
   const maxLength = 50;
 
   const map = L.map('Map').setView([51.505, -0.09], 13);
@@ -55,10 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateMainContentWithArgument("Route");
     updateListOfSelectedPath(false);
   });
-  
-  // document.getElementById("Show_All_Selected_Paths").addEventListener("click", () => {
-  //   showMain("List_Of_Selected_Paths");
-  // });
   
   document.getElementById("Location_Input").addEventListener("input", (event) => {
     clearTimeout(timeout);
@@ -297,6 +294,21 @@ document.addEventListener("DOMContentLoaded", () => {
       
       ul.appendChild(li);
       li.addEventListener("click", () => drawSelectedPaths(pathGroup.response));
+      li.addEventListener("mouseover", () => {
+        clearLayers();
+        pathGroup.response.paths.forEach((path, index) => {
+          let endingNode = path.endingNode;
+          let tempEndingNode = [endingNode.lat, endingNode.lon];
+          let length = path.length;
+          
+          let tempPath = path.path;
+          let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
+          let color = colorList[index % colorList.length];
+          
+          displayPath(tempTempPath, color, 1, length);
+          displayCircle(tempEndingNode, 10, color, color, 1, 1);
+        });
+      });
     });
   }
   
