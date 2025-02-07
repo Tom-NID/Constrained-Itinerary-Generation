@@ -359,6 +359,7 @@ io.on("connection", function (socket) {
   // parameters
   let searchRadius = -1;
   let maxSearchRadius = -1;
+  let elevation = {};
   let originLat = 0;
   let originLng = 0;
   let precision = 0;
@@ -457,6 +458,7 @@ io.on("connection", function (socket) {
 
     searchRadius = data.radius;
     maxSearchRadius = Math.max(searchRadius, maxSearchRadius);
+    elevation = data.elevation;
     maxPaths = data.maxPaths;
     precision = data.precision;
 
@@ -479,6 +481,16 @@ io.on("connection", function (socket) {
         maxPaths,
         terrain,
       );
+    } else if (method === "elevation") {
+      await graph.setAltitudes();
+
+      const nbfois = 5;
+      for (let i = 0; i < nbfois; i++) {
+        console.time("BFS Exploration");
+        console.log("Elevation:", elevation);
+        paths = graph.bfsExplore(startingNodeId, elevation.up, maxPaths);
+        console.timeEnd("BFS Exploration");
+      }
     }
 
     // console.log(paths);
@@ -553,7 +565,7 @@ io.on("connection", function (socket) {
 
     console.timeEnd("Generation paths");
 
-    sock.emit("result", {
+    socket.emit("result", {
       request: request,
       response: {
         startingNode: graph.getNodeCoordinates(startingNodeId),

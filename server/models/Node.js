@@ -24,7 +24,7 @@ export default class Node {
   }
 
   getCoordinates() {
-    return { lat: this.#lat, lon: this.#lon };
+    return { lat: this.#lat, lon: this.#lon, alt: this.#alt };
   }
 
   getCoordinatesList() {
