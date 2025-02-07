@@ -191,7 +191,7 @@
               
               <input type="radio" name="simplification" id="Graph" value="graph-simplification"/>
               <label for="Graph" title="">Graph Simplification</label>
-
+              
               <input type="radio" name="simplification" id="Auto" value="auto"/>
               <label for="Auto"title="Simplifies as needed">Auto</label>
             </div>
@@ -235,10 +235,38 @@
           <div class="ActionButton_More_Parameters">More</div>
           <div class="Action_Actions">
             <div class="ActionButton_Container">
-              <div class="ActionButton_Icon">
+              <svg class="Bicycle_Loaders" viewBox="0 0 48 30" width="48px" height="30px">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">
+                  <g transform="translate(9.5,19)">
+                    <circle class="Bicycle_Tire" r="9" stroke-dasharray="56.549 56.549" />
+                    <g class="Bicycle_Spokes_Spin" stroke-dasharray="31.416 31.416" stroke-dashoffset="-23.562">
+                      <circle class="Bicycle_Spokes" r="5" />
+                      <circle class="Bicycle_Spokes" r="5" transform="rotate(180,0,0)" />
+                    </g>
+                  </g>
+                  <g transform="translate(24,19)">
+                    <g class="Bicycle_Pedals_Spin" stroke-dasharray="25.133 25.133" stroke-dashoffset="-21.991" transform="rotate(67.5,0,0)">
+                      <circle class="Bicycle_Pedals" r="4" />
+                      <circle class="Bicycle_Pedals" r="4" transform="rotate(180,0,0)" />
+                    </g>
+                  </g>
+                  <g transform="translate(38.5,19)">
+                    <circle class="Bicycle_Tire" r="9" stroke-dasharray="56.549 56.549" />
+                    <g class="Bicycle_Spokes_Spin" stroke-dasharray="31.416 31.416" stroke-dashoffset="-23.562">
+                      <circle class="Bicycle_Spokes" r="5" />
+                      <circle class="Bicycle_Spokes" r="5" transform="rotate(180,0,0)" />
+                    </g>
+                  </g>
+                  <polyline class="Bicycle_Seat" points="14 3,18 3" stroke-dasharray="5 5" />
+                  <polyline class="Bicycle_Body" points="16 3,24 19,9.5 19,18 8,34 7,24 19" stroke-dasharray="79 79" />
+                  <path class="Bicycle_Handle_Bars" d="m30,2h6s1,0,1,1-1,1-1,1" stroke-dasharray="10 10" />
+                  <polyline class="Bicycle_Front" points="32.5 2,38.5 19" stroke-dasharray="19 19" />
+                </g>
+              </svg>
+              <div class="ActionButton_Icon ActionButton">
                 <i>></i>
               </div>
-              <div class="ActionButton_Text">
+              <div class="ActionButton_Text ActionButton">
                 <span>
                   Plan My Route
                 </span>

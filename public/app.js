@@ -130,9 +130,17 @@ document.addEventListener("DOMContentLoaded", () => {
       name: name,
     }); 
     localStorage.setItem('lastLocation', JSON.stringify({display_name : name, lat: lat, lon: lng}));
+    document.querySelector(".Bicycle_Loaders").style.display = "block";
+    document.querySelectorAll(".ActionButton").forEach((value) => {
+      value.style.display = "none";
+    });
   });
   
   sock.on("result", (res) => {
+    document.querySelector(".Bicycle_Loaders").style.display = "none";
+    document.querySelectorAll(".ActionButton").forEach((value) => {
+      value.style.display = "block";
+    });
     drawSelectedPaths(res.response); 
     allPaths.push(res);
   });
