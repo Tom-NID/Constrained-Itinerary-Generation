@@ -853,4 +853,8 @@ ul {
      -moz-appearance: none;
           appearance: none;
   list-style: none;
+}
+
+*[title] {
+  cursor: help;
 }/*# sourceMappingURL=style.css.map */

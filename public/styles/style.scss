@@ -45,3 +45,7 @@ body {
     appearance: none;
     list-style: none;
   }
+
+*[title] {
+  cursor: help;
+}
