@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isDragging = true;
       event.preventDefault();
       div.addEventListener("mousemove", onMouseMove);
-      div.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("mouseup", onMouseUp);
     });
     
     function onMouseMove(event) {
