@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePathsViewer();
   initSlide();
   initSliderLengthInput();
+  initLocation();
 
   map.on("click", (e) => {
     let lat = e.latlng.lat;
@@ -131,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
       simplificationMode: simplification,
       name: name,
     }); 
+    localStorage.setItem('lastLocation', JSON.stringify({display_name : name, lat: lat, lon: lng}));
   });
   
   sock.on("result", (res) => {
@@ -409,6 +411,12 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.appendChild(li);
     });
     accordion(); 
+  }
+
+  function initLocation() {
+    if (localStorage.getItem('lastLocation')) {
+      drawLocation(JSON.parse(localStorage.getItem('lastLocation')));
+    }
   }
 });
 
