@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let timeout = null; 
   let suggestionsList;
   let allPaths = [];
+  let colorList = ["#525445", "#34796a", "#276460", "#25484f", "#28333c", "#1f2731", "#010102"]
   const maxLength = 50;
 
   const map = L.map('Map').setView([51.505, -0.09], 13);
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePathsViewer();
   initSlide();
   initSliderLengthInput();
+  initLocation();
 
   map.on("click", (e) => {
     let lat = e.latlng.lat;
@@ -54,10 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateMainContentWithArgument("Route");
     updateListOfSelectedPath(false);
   });
-  
-  // document.getElementById("Show_All_Selected_Paths").addEventListener("click", () => {
-  //   showMain("List_Of_Selected_Paths");
-  // });
   
   document.getElementById("Location_Input").addEventListener("input", (event) => {
     clearTimeout(timeout);
@@ -117,6 +115,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const terrain = Array.from(document.querySelectorAll(".WayTypes_Checkbox input:checked")).map((checkbox) => checkbox.value);
     const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
     const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
+    const name = document.querySelector("#Location_Input").value;
+    const simplification = document.querySelector(".Simplification_Radio input:checked").value;
+    
     sock.emit("request", {
       startingPoint : {lat : lat, lng : lng},
       radius : radius,
@@ -125,23 +126,23 @@ document.addEventListener("DOMContentLoaded", () => {
       terrain: terrain,
       elevation: {up: elevationUp, down: elevationDown},
       precision: 1,
-      simplificationMode: "intersection",
+      simplificationMode: simplification,
+      name: name,
     }); 
+    localStorage.setItem('lastLocation', JSON.stringify({display_name : name, lat: lat, lon: lng}));
+    document.querySelector(".Bicycle_Loaders").style.display = "block";
+    document.querySelectorAll(".ActionButton").forEach((value) => {
+      value.style.display = "none";
+    });
   });
   
   sock.on("result", (res) => {
-    drawSelectedPaths(res); 
-    let pathsGroup = { //TODO
-      request: {
-        lenght: 20,
-        elevationUp: 500,
-        elevationDown: 500,
-        wayType: ["hard", "semi-soft"],
-        name: "Radd, Laupin, Vielank, Dömitz-Malliß, Ludwigslust-Parchim, Mecklenburg-Vorpommern, 19303, Germany",
-      },
-      response : res,
-    }
-    allPaths.push(pathsGroup);
+    document.querySelector(".Bicycle_Loaders").style.display = "none";
+    document.querySelectorAll(".ActionButton").forEach((value) => {
+      value.style.display = "block";
+    });
+    drawSelectedPaths(res.response); 
+    allPaths.push(res);
   });
 
   function updateSliderMarBel(div, unit, min, max, start = -1) {
@@ -178,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isDragging = true;
       event.preventDefault();
       div.addEventListener("mousemove", onMouseMove);
-      div.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("mouseup", onMouseUp);
     });
     
     function onMouseMove(event) {
@@ -287,13 +288,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let ul = document.querySelector(".Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
-    allPaths.forEach((pathGroup,) => {
+    allPaths.forEach((pathGroup) => {
       let li = document.createElement("li");
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
-                    <span class="Paths_Distance">${pathGroup.request.lenght.toFixed(1)} km</span>
-                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevationUp}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevationDown}m</span>
+                    <span class="Paths_Distance">${pathGroup.request.radius.toFixed(1)} km</span>
+                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevation.up}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevation.down}m</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
                 <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
@@ -301,6 +302,21 @@ document.addEventListener("DOMContentLoaded", () => {
       
       ul.appendChild(li);
       li.addEventListener("click", () => drawSelectedPaths(pathGroup.response));
+      li.addEventListener("mouseover", () => {
+        clearLayers();
+        pathGroup.response.paths.forEach((path, index) => {
+          let endingNode = path.endingNode;
+          let tempEndingNode = [endingNode.lat, endingNode.lon];
+          let length = path.length;
+          
+          let tempPath = path.path;
+          let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
+          let color = colorList[index % colorList.length];
+          
+          displayPath(tempTempPath, color, 1, length);
+          displayCircle(tempEndingNode, 10, color, color, 1, 1);
+        });
+      });
     });
   }
   
@@ -415,6 +431,12 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.appendChild(li);
     });
     accordion(); 
+  }
+
+  function initLocation() {
+    if (localStorage.getItem('lastLocation')) {
+      drawLocation(JSON.parse(localStorage.getItem('lastLocation')));
+    }
   }
 });
 

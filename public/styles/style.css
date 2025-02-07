@@ -811,6 +811,168 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   border-bottom-left-radius: 10px;
 }
 
+.Bicycle_Loaders {
+  display: none;
+  margin: auto;
+  width: 60px;
+  height: auto;
+}
+
+.Bicycle_Body,
+.Bicycle_Front,
+.Bicycle_Handle_Bars,
+.Bicycle_Pedals,
+.Bicycle_Pedals_Spin,
+.Bicycle_Seat,
+.Bicycle_Spokes,
+.Bicycle_Spokes_Spin,
+.Bicycle_Tire {
+  animation: Bicycle_Body_Animation 3s ease-in-out infinite;
+}
+
+.Bicycle_Front {
+  animation-name: Bicycle_Front_Animation;
+}
+
+.Bicycle_Handle_Bars {
+  animation-name: Bicycle_Handle_Bars_Animation;
+}
+
+.Bicycle_Pedals {
+  animation-name: Bicycle_Pedals_Animation;
+}
+
+.Bicycle_Pedals_Spin {
+  animation-name: Bicycle_Pedals_Spin_Animation;
+}
+
+.Bicycle_Seat {
+  animation-name: Bicycle_Seat_Animation;
+}
+
+.Bicycle_Spokes,
+.Bicycle_Tire {
+  stroke: currentColor;
+}
+
+.Bicycle_Spokes {
+  animation-name: Bicycle_Spokes_Animation;
+}
+
+.Bicycle_Spokes_Spin {
+  animation-name: Bicycle_Spokes_Spin_Animation;
+}
+
+.Bicycle_Tire {
+  animation-name: Bicycle_Tire_Animation;
+}
+
+@keyframes Bicycle_Body_Animation {
+  from {
+    stroke-dashoffset: 79;
+  }
+  33%, 67% {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -79;
+  }
+}
+@keyframes Bicycle_Front_Animation {
+  from {
+    stroke-dashoffset: 19;
+  }
+  33%, 67% {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -19;
+  }
+}
+@keyframes Bicycle_Handle_Bars_Animation {
+  from {
+    stroke-dashoffset: 10;
+  }
+  33%, 67% {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+@keyframes Bicycle_Pedals_Animation {
+  from {
+    animation-timing-function: ease-in;
+    stroke-dashoffset: -25.133;
+  }
+  33%, 67% {
+    animation-timing-function: ease-out;
+    stroke-dashoffset: -21.991;
+  }
+  to {
+    stroke-dashoffset: -25.133;
+  }
+}
+@keyframes Bicycle_Pedals_Spin_Animation {
+  from {
+    transform: rotate(0.1875turn);
+  }
+  to {
+    transform: rotate(3.1875turn);
+  }
+}
+@keyframes Bicycle_Seat_Animation {
+  from {
+    stroke-dashoffset: 5;
+  }
+  33%, 67% {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -5;
+  }
+}
+@keyframes Bicycle_Spokes_Animation {
+  from {
+    animation-timing-function: ease-in;
+    stroke-dashoffset: -31.416;
+  }
+  33%, 67% {
+    animation-timing-function: ease-out;
+    stroke-dashoffset: -23.562;
+  }
+  to {
+    stroke-dashoffset: -31.416;
+  }
+}
+@keyframes Bicycle_Spokes_Spin_Animation {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(3turn);
+  }
+}
+@keyframes Bicycle_Tire_Animation {
+  from {
+    animation-timing-function: ease-in;
+    stroke-dashoffset: 56.549;
+    transform: rotate(0);
+  }
+  33% {
+    stroke-dashoffset: 0;
+    transform: rotate(0.33turn);
+  }
+  67% {
+    animation-timing-function: ease-out;
+    stroke-dashoffset: 0;
+    transform: rotate(0.67turn);
+  }
+  to {
+    stroke-dashoffset: -56.549;
+    transform: rotate(1turn);
+  }
+}
 * {
   margin: 0;
   padding: 0;
@@ -853,4 +1015,8 @@ ul {
      -moz-appearance: none;
           appearance: none;
   list-style: none;
+}
+
+*[title] {
+  cursor: help;
 }/*# sourceMappingURL=style.css.map */
