@@ -24,14 +24,18 @@ export default class Graph {
     return this.#nodes.has(nodeId);
   }
 
+  setAltitude(nodeId, altitude) {
+    this.#nodes.get(nodeId).setAlt(altitude);
+  }
+
   getNodeCoordinates(nodeId) {
     return this.#nodes.get(nodeId).getCoordinates();
   }
 
   getAllNodesCoordinates() {
     let coordinates = [];
-    for (const node of this.#nodes.values()) {
-      coordinates.push(node.getCoordinatesList());
+    for (let [nodeId, node] of this.#nodes) {
+      coordinates.push([...node.getCoordinatesList(), nodeId]);
     }
     return coordinates;
   }
@@ -162,7 +166,7 @@ export default class Graph {
 
     return Math.sqrt(
       Math.pow(coordNode1.lat - coordNode2.lat, 2) +
-        Math.pow(coordNode1.lon - coordNode2.lon, 2)
+        Math.pow(coordNode1.lon - coordNode2.lon, 2),
     );
   }
 
@@ -228,7 +232,7 @@ export default class Graph {
       for (const [nodeId, node] of this.#nodes) {
         let distanceToCenter = this.getHaversineDistance(
           startingNodeId,
-          nodeId
+          nodeId,
         );
 
         if (
@@ -319,7 +323,8 @@ export default class Graph {
           // Change le fScore pour le voisin
           fScore.set(
             neighborId,
-            gScore.get(neighborId) + this.getHaversineDistance(neighborId, goal)
+            gScore.get(neighborId) +
+              this.getHaversineDistance(neighborId, goal),
           );
 
           // Ajoute le voisin a la queue de priorite avec son fscore comme valeure de prio
@@ -415,7 +420,7 @@ export default class Graph {
     // Trie des chemins en fonction de leur longueur par rapport au rayon
     const entries = Object.entries(paths);
     const sortedEntries = entries.sort(
-      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius)
+      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
     );
 
     return sortedEntries.slice(0, maxPaths);
@@ -474,7 +479,7 @@ export default class Graph {
             this.setHaversineCost(
               path[i - 1],
               path[i],
-              this.getHaversineCost(path[i - 1], path[i]) * 10
+              this.getHaversineCost(path[i - 1], path[i]) * 10,
             );
           }
 
@@ -485,7 +490,7 @@ export default class Graph {
             this.setHaversineCost(
               path[i - 1],
               path[i],
-              this.getHaversineDistance(path[i - 1], path[i])
+              this.getHaversineDistance(path[i - 1], path[i]),
             );
           }
 
@@ -525,13 +530,133 @@ export default class Graph {
     // Trie des chemins en fonction de leur longueur par rapport au rayon
     const entries = Object.entries(paths);
     const sortedEntries = entries.sort(
-      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius)
+      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
     );
 
     return sortedEntries.slice(0, maxPaths);
   }
-}
+  // }
 
+  /**
+   * Set the nodes altitude using the open-meteo api
+   **/
+  async setAltitudes() {
+    let nodesCoordinates = this.getAllNodesCoordinates();
+
+    // Api request is limited to 100 nodes at a time
+    const batchSize = 100;
+    try {
+      for (let i = 0; i < this.countNodes(); i += batchSize) {
+        console.info(`Fetching nodes ${i} to ${i + batchSize}`);
+        let batch = nodesCoordinates.slice(i, i + batchSize);
+        let latitudes = batch.map((node) => node[0]);
+        let longitudes = batch.map((node) => node[1]);
+
+        let response;
+        let success = false;
+        let attempt = 0;
+        let delay = 500; // delay in ms between each query
+
+        while (!success && attempt < 5) {
+          try {
+            response = await fetch(
+              `https://api.open-meteo.com/v1/elevation?latitude=${latitudes.join(",")}&longitude=${longitudes.join(",")}`,
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.elevation) {
+                data.elevation.forEach((altitude, index) => {
+                  this.setAltitude(batch[index][2], altitude);
+                });
+              }
+              success = true;
+            } else if (response.status === 429) {
+              console.warn(`429 Too Many Requests: Retrying in ${delay}ms...`);
+              await sleep(delay);
+              delay *= 2; // backoff
+              attempt++;
+            } else {
+              console.error("API Error:", response.status);
+              break;
+            }
+          } catch (err) {
+            console.error("Network error during fetch:", err);
+            break;
+          }
+        }
+        if (!success) {
+          console.error(
+            "Failed to fetch elevation data after multiple attempts.",
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching altitudes:", error);
+    }
+    console.log("Elevation fetched");
+  }
+
+  bfsExplore(startingNodeId, elevationConstraint, maxPaths) {
+    let paths = {};
+    let queue = [
+      { node: startingNodeId, path: [startingNodeId], elevation: 0 },
+    ];
+    let visited = new Set();
+
+    console.log(
+      queue.length > 0,
+      Object.keys(paths).length < maxPaths,
+      Object.keys(paths),
+      maxPaths,
+    );
+    while (queue.length > 0 && Object.keys(paths).length < maxPaths) {
+      let { node, path, elevation } = queue.shift();
+
+      // Check the constraint
+      if (elevation >= elevationConstraint) {
+        if (
+          Math.abs(elevation - elevationConstraint) <=
+          elevationConstraint * 0.1
+        ) {
+          console.log(path[path.length - 1]);
+          paths[path[path.length - 1]] = {
+            path: path,
+            elevation: elevation,
+          };
+        }
+        continue;
+      }
+
+      // Neighbors
+      for (let neighbor of this.getNeighbors(node)) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          const elevationGain = Math.abs(
+            this.getNodeCoordinates(neighbor).alt -
+              this.getNodeCoordinates(node).alt,
+          );
+          queue.push({
+            node: neighbor,
+            path: [...path, neighbor],
+            elevation: elevation + elevationGain,
+          });
+        }
+      }
+    }
+    // return paths.sort((a, b) => a.elevation - b.elevation);
+    const entries = Object.entries(paths);
+    const sortedEntries = entries.sort(
+      (a, b) =>
+        Math.abs(a[1].elevation - elevationConstraint) -
+        Math.abs(b[1].elevation - elevationConstraint),
+    );
+
+    console.log("sortedEntries: ", sortedEntries);
+
+    return sortedEntries.slice(0, maxPaths);
+  }
+}
 // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
 function shuffle(array) {
   let currentIndex = array.length;
