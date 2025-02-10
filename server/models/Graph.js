@@ -219,6 +219,36 @@ export default class Graph {
   }
 
   /**
+   * Return equidistant elements in an array based on a number of elements
+   * @param {*} arr The array to return the nbElements from
+   * @param {*} nbELements The number of elements to get from the array
+   * @returns
+   */
+  getEquidistantElements(arr, nbElements) {
+    if (nbElements >= arr.length) return arr; // If asking for more elements than available, return all
+
+    let step = Math.round(arr.length / nbElements);
+    return arr.filter((_, i) => i % step === 0);
+  }
+
+  /**
+   * Sorts points around a circle based on the angle with the center
+   * @param {*} points The points to be sorted
+   * @parad {*} centerId The id of the center point
+   * @returns
+   */
+  sortAroundCircle(nodes, centerId) {
+    let center = this.getNodeCoordinates(centerId);
+    return nodes.sort((a, b) => {
+      let coordA = this.getNodeCoordinates(a);
+      let coordB = this.getNodeCoordinates(b);
+      let angleA = Math.atan2(coordA.lat - center.lat, coordA.lon - center.lon);
+      let angleB = Math.atan(coordB.lat - center.lat, coordB.lon - center.lat);
+      return angleA - angleB;
+    });
+  }
+
+  /**
    * Revoie tous les points autour du perimetre d'un cercle (+-1% du rayon)
    * @param {*} radius Rayon du cercle
    * @returns
@@ -362,14 +392,17 @@ export default class Graph {
     for (let i = 0; i < precision * 5; ++i) {
       console.log(i + 1, "/", precision * 5);
       let goalNodes = this.getGoalNodes(startingNodeId, searchRadius);
+      goalNodes = this.sortAroundCircle(goalNodes, startingNodeId);
+
+      const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
+      goalNodes = this.getEquidistantElements(goalNodes, nbCheckedNodes);
+
       // shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
 
       let totalPathsLength = 0;
       let totalLength = 0;
 
-      const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
-
-      for (let nodeId of goalNodes.slice(0, nbCheckedNodes)) {
+      for (let nodeId of goalNodes) {
         let path = this.aStar(startingNodeId, nodeId, terrain);
         if (path) {
           let length = this.getPathLength(path);
@@ -445,14 +478,16 @@ export default class Graph {
       inaccuracy = inaccuracy < 25 ? 25 : inaccuracy;
 
       let goalNodes = this.getGoalNodes(startingNodeId, searchRadius);
+      goalNodes = this.sortAroundCircle(goalNodes, startingNodeId);
+
+      const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
+      goalNodes = this.getEquidistantElements(goalNodes, nbCheckedNodes);
       // shuffle(goalNodes); // Melange pour obtenir des nodes aleatoires
 
       let totalPathsLength = 0;
       let totalLength = 0;
 
-      const nbCheckedNodes = Math.max(maxPaths, 10) * precision;
-
-      for (let nodeId of goalNodes.slice(0, nbCheckedNodes)) {
+      for (let nodeId of goalNodes) {
         let path = this.aStar(startingNodeId, nodeId, terrain);
 
         if (path) {
