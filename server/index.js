@@ -432,6 +432,7 @@ io.on("connection", function (socket) {
     } else {
       graph = simplifiedGraph.clone();
     }
+    await graph.setAltitudes();
 
     // socket.emit("graph", {
     //   color: "red",
@@ -482,7 +483,7 @@ io.on("connection", function (socket) {
         terrain,
       );
     } else if (method === "elevation") {
-      await graph.setAltitudes();
+      // await graph.setAltitudes();
 
       const nbfois = 5;
       for (let i = 0; i < nbfois; i++) {
@@ -502,66 +503,75 @@ io.on("connection", function (socket) {
       endingNode: graph.getNodeCoordinates(parseInt(path[0])),
     }));
 
-    // Reconstruct the paths based on the full graph
-    // if (simplificationMode !== "full") {
     paths.forEach((path) => {
-      let completePath = [];
-      let length = path.length;
-      let partialPath = path.path;
-
-      // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
-      completePath = reconstructPath(partialPath);
-
-      // Remove the dead ends of the reconstructed path
-      completePath = removeDeadEnds(completePath, path.endingNode);
-
-      // Remove nodes from the path if it is too long
-      if (method === "path") {
-        let currLength = 0;
-        for (let j = 1; j < completePath.length; ++j) {
-          let sectionDistance = fullGraph.getHaversineCost(
-            completePath[j - 1],
-            completePath[j],
-          );
-          currLength += sectionDistance;
-          if (currLength >= length) {
-            let index =
-              Math.abs(length - currLength) <
-              Math.abs(length - (currLength - sectionDistance))
-                ? j
-                : j - 1; // Minimise la difference entre currLength et radius
-            completePath = completePath.slice(0, index + 1);
-            path.endingNode = fullGraph.getNodeCoordinates(
-              completePath[completePath.length - 1],
-            );
-            break;
-          }
-        }
-        console.log("currLength: ", currLength);
-      }
-
-      // Get the different surfaces of the path
       let pathSurface = [];
-      for (let i = 1; i < completePath.length; ++i) {
-        pathSurface.push(
-          fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
-        );
+      for (let i = 1; i < path.path.length; ++i) {
+        pathSurface.push(graph.getSurfaceType(path.path[i - 1], path.path[i]));
       }
-
-      // The new length of the path
-      let pathLength = fullGraph.getPathLength(completePath);
-      console.log("pathlength: ", pathLength);
-
-      // Replace the node Ids by coordinates
-      completePath = completePath.map((nodeId) =>
-        fullGraph.getNodeCoordinates(nodeId),
-      );
-
-      path.path = completePath;
       path.pathSurface = pathSurface;
-      path.length = pathLength;
+      path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
     });
-    // }
+
+    // Reconstruct the paths based on the full graph
+    // // if (simplificationMode !== "full") {
+    // paths.forEach((path) => {
+    //   let completePath = [];
+    //   let length = path.length;
+    //   let partialPath = path.path;
+
+    //   // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
+    //   completePath = reconstructPath(partialPath);
+
+    //   // Remove the dead ends of the reconstructed path
+    //   completePath = removeDeadEnds(completePath, path.endingNode);
+
+    //   // Remove nodes from the path if it is too long
+    //   if (method === "path") {
+    //     let currLength = 0;
+    //     for (let j = 1; j < completePath.length; ++j) {
+    //       let sectionDistance = fullGraph.getHaversineCost(
+    //         completePath[j - 1],
+    //         completePath[j],
+    //       );
+    //       currLength += sectionDistance;
+    //       if (currLength >= length) {
+    //         let index =
+    //           Math.abs(length - currLength) <
+    //           Math.abs(length - (currLength - sectionDistance))
+    //             ? j
+    //             : j - 1; // Minimise la difference entre currLength et radius
+    //         completePath = completePath.slice(0, index + 1);
+    //         path.endingNode = fullGraph.getNodeCoordinates(
+    //           completePath[completePath.length - 1],
+    //         );
+    //         break;
+    //       }
+    //     }
+    //     console.log("currLength: ", currLength);
+    //   }
+
+    //   // Get the different surfaces of the path
+    //   let pathSurface = [];
+    //   for (let i = 1; i < completePath.length; ++i) {
+    //     pathSurface.push(
+    //       fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
+    //     );
+    //   }
+
+    //   // The new length of the path
+    //   let pathLength = fullGraph.getPathLength(completePath);
+    //   console.log("pathlength: ", pathLength);
+
+    //   // Replace the node Ids by coordinates
+    //   completePath = completePath.map((nodeId) =>
+    //     fullGraph.getNodeCoordinates(nodeId),
+    //   );
+
+    //   path.path = completePath;
+    //   path.pathSurface = pathSurface;
+    //   path.length = pathLength;
+    // });
+    // // }
 
     console.timeEnd("Generation paths");
 
