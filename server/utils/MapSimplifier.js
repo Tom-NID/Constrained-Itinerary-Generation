@@ -7,7 +7,11 @@ export default class MapSimplifier {
 
   constructor(length, segmentSize, center) {
     length += 100;
-    this.#origin = this.getTopRightCorner(center.lat, center.lon, length / 2);
+    this.#origin = this.getTopRightCorner(
+      parseFloat(center.lat),
+      parseFloat(center.lon),
+      length / 2,
+    );
     this.#length = length;
     this.#segmentSize = segmentSize;
     this.#grid = [];
@@ -67,7 +71,6 @@ export default class MapSimplifier {
   }
 
   getTopRightCorner(lat, lon, distance) {
-    distance = distance;
     const R = 6371000; // Radius of the Earth in meters
 
     // Convert latitude and longitude from degrees to radians
@@ -81,7 +84,7 @@ export default class MapSimplifier {
 
     // Add the changes to the original latitude and longitude
     const newLat = lat + (deltaLat * 180) / Math.PI;
-    const newLon = lon + (deltaLon * 180) / Math.PI;
+    const newLon = lon + (deltaLon * 180) / (Math.PI * Math.cos(latRad));
 
     return { lat: newLat, lon: newLon };
   }
