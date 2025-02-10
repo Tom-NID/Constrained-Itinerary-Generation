@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSlide();
   initSliderLengthInput();
   initLocation();
+  initAllPaths();
 
   map.on("click", (e) => {
     let lat = e.latlng.lat;
@@ -143,7 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     drawSelectedPaths(res.response); 
     allPaths.push(res);
+    updatePathsLocalStorage();
   });
+
+  function updatePathsLocalStorage() {
+    localStorage.setItem('allPaths', JSON.stringify(allPaths));
+  }
 
   function updateSliderMarBel(div, unit, min, max, start = -1) {
     const handle = div.querySelector(".Slider_Handle");
@@ -293,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
-                    <span class="Paths_Distance">${pathGroup.request.radius.toFixed(1)} km</span>
+                    <span class="Paths_Distance">${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
                     <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevation.up}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevation.down}m</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
@@ -436,6 +442,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function initLocation() {
     if (localStorage.getItem('lastLocation')) {
       drawLocation(JSON.parse(localStorage.getItem('lastLocation')));
+    }
+  }
+
+  function initAllPaths() {
+    if (localStorage.getItem('allPaths')) {
+      allPaths = JSON.parse(localStorage.getItem('allPaths'));
+      updatePathsViewer();
     }
   }
 });
