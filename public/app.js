@@ -7,8 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let suggestionsList;
   let allPaths = [];
   let colorList = ["#525445", "#34796a", "#276460", "#25484f", "#28333c", "#1f2731", "#010102"]
-  const maxLength = 50;
-
+  const wayTypes = ["hard", "semi-hard", "semi-soft", "soft"];
+  const wayTypesColor = ['#18FFFF', '#0288D1', '#BF360C', '#F4511E'];
+  // const pieData = [
+  //   { name: 'Running', value: 40, color: '#18FFFF' },
+  //   { name: 'Paused', value: 26, color: '#0288D1' },
+  //   { name: 'Stopped', value: 7, color: '#BF360C' },
+  //   { name: 'Failed', value: 13, color: '#F4511E' },
+  //   { name: 'Unknown', value: 19, color: '#F9A825' },
+  // ];
   const map = L.map('Map').setView([51.505, -0.09], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
@@ -20,13 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSliderMarBel(document.querySelector(".Nb_Paths_Container"), "", 1, 10);
     updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
   });
-
+  
   updatePathsViewer();
   initSlide();
   initSliderLengthInput();
   initLocation();
   initAllPaths();
-
+  
   map.on("click", (e) => {
     let lat = e.latlng.lat;
     let lng = e.latlng.lng;
@@ -76,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(error => console.error("Error fetching locations:", error));
     }, 500);
   });
-
+  
   document.querySelector(".ActionButton_More_Parameters").addEventListener("click", () => {
     let simplification = document.querySelector(".Simplification_Container");
     simplification.style.display = simplification.style.display === "grid" ? "none" : "grid";
@@ -146,11 +153,11 @@ document.addEventListener("DOMContentLoaded", () => {
     allPaths.push(res);
     updatePathsLocalStorage();
   });
-
+  
   function updatePathsLocalStorage() {
     localStorage.setItem('allPaths', JSON.stringify(allPaths));
   }
-
+  
   function updateSliderMarBel(div, unit, min, max, start = -1) {
     const handle = div.querySelector(".Slider_Handle");
     const span = div.querySelector(".Route_Label span") || div.querySelector(".Paths_Label span") || div.querySelector(".Precision_Label span");
@@ -174,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
       label.innerHTML = Number(index * max / 5);
       left += step;
     });
-
+    
     handle.style.left = `${Math.floor(avgLeft)}px`;
     
     let nb = Math.ceil(ratio * avgLeft);
@@ -277,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function updateSelection(items) {
-    if (!items || items.lenght == 0) return;
+    if (!items || items.length == 0) return;
     items.forEach((elem) => {
       elem.classList.remove("active");
     });
@@ -374,50 +381,45 @@ document.addEventListener("DOMContentLoaded", () => {
   function drawSelectedPaths(res) {
     updateMainContentWithArgument("Route");
     updateListOfSelectedPath(true);
-    
     let ul = document.querySelector(".List_Of_Selected_Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
-    res.paths.forEach((path) => {
+    res.paths.forEach((path, index) => {
       let li = document.createElement("li");
       li.classList.add("Li_Container");
-      li.innerHTML = `
-                <div class="Path_Container">
-                    <div class="Path_Result">
-                        <div class="Distance_Elevation_Container">
-                            <span class="Distance_Container">
-                                <i class="fa-solid fa-arrows-left-right"></i> ${(path.length / 1000).toFixed(1)} km
-                            </span>
-                            <span class="Elevation_Up"><i class="fa-solid fa-arrow-trend-up"></i>TODO</span>
-                            <span class="Elevation_Down"><i class="fa-solid fa-arrow-trend-down"></i>TODO</span>
-                        </div> TODO WAY TYPES` + 
-      // <div class="Surface_Container">
-      //     <div class="WayType_Title">
-      //         <img class="WayType_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png"> Way types
-      //     </div>
-      //     <div class="Surface">
-      //         <div class="Surface_Element a1" style="width: 94.30%;"></div>
-      //         <div class="Surface_Element a2" style="width: 5.70%;"></div>
-      //     </div>
-      // </div>
-      
-      `</div>
-                    <div class="Export_Container">
-                        <span><i class="fa-solid fa-share-nodes"></i> Generate share link</span>
-                        <div class="Accordion_Container">
-                            <button class="Accordion_Title">Export Options</button>
-                            <div class="Accordion_Text">
-                                <ul>
-                                    <li><span>Open in Google Maps</span></li>
-                                    <li><span>Open in Komoot</span></li>
-                                    <li><span>Here WeGo</span></li>
-                                    <li><span>Download GPX</span></li>
-                                    <li><span>Download KML</span></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
+      li.innerHTML = 
+      `<div class="Path_Container">
+        <div class="Path_Result">
+          <div class="Distance_Elevation_Container">
+            <span class="Distance_Container">
+              <i class="fa-solid fa-arrows-left-right"></i> ${(path.length / 1000).toFixed(1)} km
+            </span>
+            <span class="Elevation_Up"><i class="fa-solid fa-arrow-trend-up"></i>TODO</span>
+            <span class="Elevation_Down"><i class="fa-solid fa-arrow-trend-down"></i>TODO</span>
+          </div>
+          <div class="Surface_Container">
+            <div class="WayType_Title">
+              <img class="WayType_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png"> Way types
+            </div>
+            <div class="Surface">
+              <div>
+                <canvas id="chart${index}" class="Chart_Container"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="Export_Container">
+            <span><i class="fa-solid fa-share-nodes"></i> Generate share link</span>
+            <div class="Accordion_Container">
+              <button class="Accordion_Title">Export Options</button>
+              <div class="Accordion_Text">
+                <ul>
+                  ${["Open in Google Maps", "Open in Komoot", "Here WeGo", "Download GPX", "Download KML"].map(option => `<li><span>${option}</span></li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
       
       li.addEventListener("click", () => li.classList.toggle("active"));
       li.addEventListener("mouseenter", () => {
@@ -435,36 +437,148 @@ document.addEventListener("DOMContentLoaded", () => {
         
       })
       ul.appendChild(li);
+      const lenghts = wayTypes.map(type => wayTypeCalcul(type, path));
+      updateChart(path, lenghts, index)
     });
     accordion(); 
   }
-
+  
+  function wayTypeCalcul(type, path) {
+    let length = 0;
+    path.pathSurface.forEach((value, index) => {      
+      if (value === type) {
+        length += getHaversineDistance(path.path[index], path.path[index + 1]);
+      }
+    });
+    return length;
+  }
+  
+  function getHaversineDistance(coordNode1, coordNode2) {
+    const R = 6378.137; // Radius of earth in KM
+    var dLat =
+    (coordNode2.lat * Math.PI) / 180 - (coordNode1.lat * Math.PI) / 180;
+    var dLon =
+    (coordNode2.lon * Math.PI) / 180 - (coordNode1.lon * Math.PI) / 180;
+    var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((coordNode1.lat * Math.PI) / 180) *
+    Math.cos((coordNode2.lat * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c;
+    return d * 1000; // meters
+  }
+  
   function initLocation() {
     if (localStorage.getItem('lastLocation')) {
       drawLocation(JSON.parse(localStorage.getItem('lastLocation')));
     }
   }
-
+  
   function initAllPaths() {
     if (localStorage.getItem('allPaths')) {
       allPaths = JSON.parse(localStorage.getItem('allPaths'));
       updatePathsViewer();
     }
   }
-});
+  function updateChart(path, lengths, index) {
+    const ctx = document.getElementById('chart' + index);
+    ctx.height = 100;
+    ctx.width = 250;
+    let filteredIndices = lengths
+    .map((value, index) => value < 1000 ? index : -1) // Get the indices of elements that are 0
+    .filter(index => index !== -1); // Remove -1 values (no length = 0)
+    
+    let newLengths = lengths.filter((value, index) => !filteredIndices.includes(index));
+    let newWayType = wayTypes.filter((value, index) => !filteredIndices.includes(index));
+    let newColors = wayTypesColor.filter((value, index) => !filteredIndices.includes(index));
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: newWayType,
+        datasets: [{
+          data: newLengths, 
+          backgroundColor: newColors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              generateLabels: function(chart) {
+                let data = chart.data.datasets[0].data;
+                return chart.data.labels.map((label, index) => {
+                  let value = data[index];
+                  let percentage = (value / 1000).toFixed(1);
+                  return {
+                    text: `${label} ${percentage} km`, 
+                    fillStyle: chart.data.datasets[0].backgroundColor[index],
+                    hidden: false,
+                    boxWidth: 20,
+                    boxHeight: 20
+                  };
+                });
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (tooltipItem) {
+                let value = tooltipItem.raw;
+                return `${tooltipItem.label} = ${(value / 1000).toFixed(1)} km`;
+              }
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        onHover: function (event, chartElement) {
+          let chart = event.chart;
+          if (chartElement && chartElement.length) {
+            clearLayers();
+            updateWayTypesMap(path, chart.data.labels[chartElement[0].index], chart.data.datasets[0].backgroundColor[chartElement[0].index]);
+          }
+        },
+        onLeave: function (event, chartElement) {
+          clearLayers();
+          displayPath(path.path, "black", 1);
+        }}
+      });
+    }
 
-function accordion() {
-  document.querySelectorAll(".Accordion_Title").forEach(element => {
-    element.addEventListener("click", function(event) {
-      event.stopPropagation();
-      this.classList.toggle("Active");
-      var accordionText = this.nextElementSibling;
-      if (accordionText.style.maxHeight) {
-        accordionText.style.maxHeight = null;
-      } else {
-        accordionText.style.maxHeight = accordionText.scrollHeight + "px";
-      } 
-    });
+    function updateWayTypesMap(path, type, backgroundColor) {
+      let color;
+      path.pathSurface.forEach((value, index) => {
+        if (value == type) {
+          color = backgroundColor;
+        } else {
+          color = "black";
+        }
+        displayPath([path.path[index], path.path[index + 1]], color, 1);
+      });
+    }
   });
-}
-
+  function accordion() {
+    document.querySelectorAll(".Accordion_Title").forEach(element => {
+      element.addEventListener("click", function(event) {
+        event.stopPropagation();
+        this.classList.toggle("Active");
+        var accordionText = this.nextElementSibling;
+        if (accordionText.style.maxHeight) {
+          accordionText.style.maxHeight = null;
+        } else {
+          accordionText.style.maxHeight = accordionText.scrollHeight + "px";
+        } 
+      });
+    });
+  }
+  
+  
