@@ -510,6 +510,17 @@ io.on("connection", function (socket) {
       }
       path.pathSurface = pathSurface;
       path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
+      let posElevation = 0;
+      let negElevation = 0;
+      for (let i = 1; i < path.path.length; ++i) {
+        let elev = path.path[i].alt - path.path[i - 1].alt;
+        if (elev > 0) {
+          posElevation += elev;
+        } else {
+          negElevation += elev;
+        }
+      }
+      path.elevation = { pos: posElevation, neg: negElevation };
     });
 
     // Reconstruct the paths based on the full graph
