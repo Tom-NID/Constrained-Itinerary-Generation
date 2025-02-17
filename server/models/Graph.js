@@ -61,10 +61,18 @@ export default class Graph {
     return this.#nodes.size;
   }
 
-  addEdge(nodeId1, nodeId2, surfaceType = "hard") {
+  addEdge(nodeId1, nodeId2, surfaceType = "hard", distances = null) {
     if (this.hasNode(nodeId1) && this.hasNode(nodeId2)) {
-      let euclideanDistance = this.getEuclideanDistance(nodeId1, nodeId2);
-      let haversineDistance = this.getHaversineDistance(nodeId1, nodeId2);
+      let euclideanDistance = 0;
+      let haversineDistance = 0;
+      if (distances) {
+        euclideanDistance = distances.euclidean;
+        haversineDistance = distances.haversine;
+      } else {
+        euclideanDistance = this.getEuclideanDistance(nodeId1, nodeId2);
+        haversineDistance = this.getHaversineDistance(nodeId1, nodeId2);
+      }
+
       let cost = new Cost(euclideanDistance, haversineDistance, surfaceType);
       this.#nodes.get(nodeId1).addEdge(nodeId2, cost);
     }
@@ -286,7 +294,7 @@ export default class Graph {
     return totalPath;
   }
 
-  aStar(start, goal, terrain) {
+  aStar(start, goal, terrain, limit = Infinity) {
     // Queue de priorite pour les nodes a evaluer
     let openSet = new PriorityQueue();
     openSet.enqueue(start, 0);
@@ -328,15 +336,20 @@ export default class Graph {
         }
 
         // gScore total du depart jusque au voisin de currentId
-        // let surfacePenalty =
-        //   terrain.length > 0 &&
-        //   terrain.includes(this.getSurfaceType(currentId, neighborId))
-        //     ? 1
-        //     : 1000;
-        let surfacePenalty = 1;
+        let surfacePenalty =
+          terrain.length == 0 ||
+          terrain.includes(this.getSurfaceType(currentId, neighborId))
+            ? 1
+            : 10;
+        // let surfacePenalty = 1;
         let tentativeGScore =
           gScore.get(currentId) +
           this.getHaversineCost(currentId, neighborId) * surfacePenalty;
+        // console.log(tentativeGScore, limit);
+        if (tentativeGScore > limit * 100) {
+          return null;
+        }
+        // console.log("tentativeGScore:", tentativeGScore);
 
         if (
           !gScore.has(neighborId) ||
@@ -365,12 +378,26 @@ export default class Graph {
     return null;
   }
 
+  getPathLengthEuclidean(path) {
+    if (!path) {
+      return Infinity;
+    }
+    let len = 0;
+    for (let i = 1; i < path.length; ++i) {
+      len += this.getEuclideanCost(path[i - 1], path[i]);
+    }
+    return len;
+  }
+
   /**
    *
    * @param {*} path Chemin dont la longueur est evaluee (list d'id de nodes)
    * @returns La longueur du chemin
    */
   getPathLength(path) {
+    if (!path) {
+      return Infinity;
+    }
     let len = 0;
     for (let i = 1; i < path.length; ++i) {
       len += this.getHaversineCost(path[i - 1], path[i]);

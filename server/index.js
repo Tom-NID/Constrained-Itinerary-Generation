@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import Graph from "./models/Graph.js";
 import Node from "./models/Node.js";
 import MapSimplifier from "./utils/MapSimplifier.js";
+import { get } from "https";
 
 // Get the current directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -28,208 +29,328 @@ app.get("/", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "../../public/app.html"));
 });
 
-function getGraph(graph, ways, nodeWayCounts, simplificationMode, queryData) {
-  let addedNodes = new Set();
-  let intersectionSize = 1;
-  let simplificationFactor = 25;
-
-  // way-simplification
-  let oldToNew = new Map();
-  let toReplace = new Set();
-
-  // graph-simplification
-  let mapSimplifier = null;
-  let correspondanceMap = null;
-
-  if (simplificationMode !== "full") {
-    intersectionSize = 2;
+function getSurface(surface, highway) {
+  if (surface) {
+    switch (surface) {
+      case "asphalt":
+      case "concrete":
+      case "concrete:lanes ":
+      case "concrete:plates ":
+      case "paved":
+      case "stepping_stones":
+      case "metal":
+      case "metal_grid":
+        surface = "hard";
+        break;
+      case "bricks":
+      case "pebblestone":
+      case "paving_stones":
+      case "paving_stones:lanes ":
+      case "unhewn_cobblestone":
+      case "sett":
+      case "grass_paver":
+      case "cobblestone":
+      case "wood":
+        surface = "semi-hard";
+        break;
+      case "unpaved":
+      case "compacted":
+      case "gravel":
+      case "rock":
+      case "fine_gravel":
+        surface = "semi-soft";
+        break;
+      case "woodchips":
+      case "ground":
+      case "dirt":
+      case "earth":
+      case "grass":
+      case "chipseal":
+      case "rubber":
+      case "shells":
+      case "sand":
+        surface = "soft";
+        break;
+      case "mud":
+      case "snow":
+      case "ice":
+      case "salt":
+        surface = "extreme";
+        break;
+    }
+  } else {
+    switch (highway) {
+      case "motorway":
+      case "trunk":
+      case "primary":
+      case "secondary":
+      case "tertiary":
+      case "unclassified":
+      case "residential":
+      case "motorway_link":
+      case "trunk_link":
+      case "primary_link":
+      case "secondary_link":
+      case "tertiary_link":
+      case "living_street":
+      case "service":
+      case "pedestrian":
+      case "bus_guideway":
+      case "road":
+      case "footway":
+      case "cycleway":
+        surface = "hard";
+        break;
+      case "track":
+      case "bridleway":
+      case "path":
+        surface = "soft";
+        break;
+      default:
+        surface = "hard";
+        break;
+    }
   }
+  return surface;
+}
 
-  if (simplificationMode === "graph-simplification") {
-    mapSimplifier = new MapSimplifier(
-      queryData.radius * 2,
-      simplificationFactor,
-      {
-        lat: queryData.startingPoint.lat,
-        lon: queryData.startingPoint.lng,
-      },
-    );
-  }
-
-  // let cacaCounter = 0;
-
+function getFullGraph(graph, ways) {
   ways.forEach((element) => {
     if (element.type === "node") {
-      if (nodeWayCounts.get(element.id) >= intersectionSize) {
-        graph.addNode(element.id, element.lat, element.lon);
-
-        if (simplificationMode === "graph-simplification") {
-          mapSimplifier.addPoint(element.lat, element.lon, element.id);
-        }
-      }
+      graph.addNode(element.id, element.lat, element.lon);
     }
   });
-
-  if (simplificationMode === "graph-simplification") {
-    console.time("graph simplification");
-    mapSimplifier.simplify();
-    correspondanceMap = mapSimplifier.getCorrespondanceMap();
-    console.timeEnd("graph simplification");
-  }
 
   ways.forEach((element) => {
     if (element.type === "way") {
-      let surface = element.tags.surface;
-      let highway = element.tags.highway;
-      if (surface) {
-        switch (surface) {
-          case "asphalt":
-          case "concrete":
-          case "concrete:lanes ":
-          case "concrete:plates ":
-          case "paved":
-          case "stepping_stones":
-          case "metal":
-          case "metal_grid":
-            surface = "hard";
-            break;
-          case "bricks":
-          case "pebblestone":
-          case "paving_stones":
-          case "paving_stones:lanes ":
-          case "unhewn_cobblestone":
-          case "sett":
-          case "grass_paver":
-          case "cobblestone":
-          case "wood":
-            surface = "semi-hard";
-            break;
-          case "unpaved":
-          case "compacted":
-          case "gravel":
-          case "rock":
-          case "fine_gravel":
-            surface = "semi-soft";
-            break;
-          case "woodchips":
-          case "ground":
-          case "dirt":
-          case "earth":
-          case "grass":
-          case "chipseal":
-          case "rubber":
-          case "shells":
-          case "sand":
-            surface = "soft";
-            break;
-          case "mud":
-          case "snow":
-          case "ice":
-          case "salt":
-            surface = "extreme";
-            break;
-        }
-      } else {
-        switch (highway) {
-          case "motorway":
-          case "trunk":
-          case "primary":
-          case "secondary":
-          case "tertiary":
-          case "unclassified":
-          case "residential":
-          case "motorway_link":
-          case "trunk_link":
-          case "primary_link":
-          case "secondary_link":
-          case "tertiary_link":
-          case "living_street":
-          case "service":
-          case "pedestrian":
-          case "bus_guideway":
-          case "road":
-          case "footway":
-          case "cycleway":
-            surface = "hard";
-            break;
-          case "track":
-          case "bridleway":
-          case "path":
-            surface = "soft";
-            break;
-          default:
-            surface = "hard";
-            break;
-        }
+      let surface = getSurface(element.tags.surface, element.tags.highway);
+      for (let i = 0; i < element.nodes.length - 1; i++) {
+        let nodeId1 = element.nodes[i];
+        let nodeId2 = element.nodes[i + 1];
+
+        graph.addEdge(nodeId1, nodeId2, surface);
+        graph.addEdge(nodeId2, nodeId1, surface);
       }
+    }
+  });
+}
+
+function getIntersectionGraph(graph, ways, nodeWayCounts, fullGraph) {
+  ways.forEach((element) => {
+    if (element.type === "node") {
+      if (nodeWayCounts.get(element.id) >= 2) {
+        graph.addNode(element.id, element.lat, element.lon);
+      }
+    }
+  });
+
+  ways.forEach((element) => {
+    if (element.type === "way") {
+      let surface = getSurface(element.tags.surface, element.tags.highway);
+
       // Conserve uniquement les intersections desirees
       element.nodes = element.nodes.filter(
-        (nodeId) =>
-          nodeWayCounts.get(nodeId) >= intersectionSize &&
-          graph.hasNode(nodeId),
+        (nodeId) => nodeWayCounts.get(nodeId) >= 2 && graph.hasNode(nodeId),
       );
 
-      if (simplificationMode === "way-simplification") {
-        let prev = element.nodes[0];
-        for (let i = 1; i < element.nodes.length; i++) {
-          let curr = element.nodes[i];
+      for (let i = 0; i < element.nodes.length - 1; i++) {
+        let nodeId1 = element.nodes[i];
+        let nodeId2 = element.nodes[i + 1];
 
-          if (oldToNew.has(curr)) {
-            curr = oldToNew.get(curr);
-          }
-
-          const distance = graph.getHaversineDistance(curr, prev);
-
-          // dernier node de la way
-          if (i == element.nodes.length - 1) {
-            graph.addEdge(prev, curr, surface);
-            graph.addEdge(curr, prev, surface);
-            addedNodes.add(prev);
-            addedNodes.add(curr);
-
-            for (let nodeId of toReplace) {
-              oldToNew.set(nodeId, prev);
-            }
-            toReplace.clear();
-            break;
-          }
-
-          if (distance >= simplificationFactor) {
-            for (let nodeId of toReplace) {
-              oldToNew.set(nodeId, prev);
-            }
-            toReplace.clear();
-            addedNodes.add(prev);
-            addedNodes.add(curr);
-            graph.addEdge(prev, curr, surface);
-            graph.addEdge(curr, prev, surface);
-            prev = curr;
-          } else {
-            toReplace.add(curr);
-          }
+        if (!nodeId1 || !nodeId2) {
+          console.log(nodeId1, nodeId2);
+          continue;
         }
-      } else {
-        for (let i = 0; i < element.nodes.length - 1; i++) {
-          let nodeId1 = element.nodes[i];
-          let nodeId2 = element.nodes[i + 1];
+        let path = fullGraph.aStar(nodeId1, nodeId2, []);
+        if (!path) {
+          continue;
+        }
 
-          if (simplificationMode === "graph-simplification") {
-            nodeId1 = correspondanceMap.get(nodeId1);
-            nodeId2 = correspondanceMap.get(nodeId2);
+        let distances = {
+          euclidean: fullGraph.getPathLengthEuclidean(path),
+          haversine: fullGraph.getPathLength(path),
+        };
+        graph.addEdge(nodeId1, nodeId2, surface, distances);
+        graph.addEdge(nodeId2, nodeId1, surface, distances);
+      }
+    }
+  });
+}
+
+function getWaySimplificationGraph(
+  graph,
+  ways,
+  nodeWayCounts,
+  simplificationFactor,
+  fullGraph,
+) {
+  let addedNodes = new Set();
+  let oldToNew = new Map();
+  let toReplace = new Set();
+
+  ways.forEach((element) => {
+    if (element.type === "node") {
+      if (nodeWayCounts.get(element.id) >= 2) {
+        graph.addNode(element.id, element.lat, element.lon);
+      }
+    }
+  });
+
+  ways.forEach((element) => {
+    if (element.type === "way") {
+      let surface = getSurface(element.tags.surface, element.tags.highway);
+
+      // Conserve uniquement les intersection desirees
+      element.nodes = element.nodes.filter(
+        (nodeId) => nodeWayCounts.get(nodeId) >= 2 && graph.hasNode(nodeId),
+      );
+
+      let prev = element.nodes[0];
+      for (let i = 1; i < element.nodes.length; i++) {
+        let curr = element.nodes[i];
+
+        if (oldToNew.get(curr)) {
+          curr = oldToNew.get(curr);
+        }
+
+        const distance = graph.getHaversineDistance(curr, prev);
+
+        // dernier node de la way
+        if (i == element.nodes.length - 1) {
+          graph.addEdge(prev, curr, surface, fullGraph);
+          graph.addEdge(curr, prev, surface, fullGraph);
+          addedNodes.add(prev);
+          addedNodes.add(curr);
+
+          for (let nodeId of toReplace) {
+            oldToNew.set(nodeId, prev);
           }
+          toReplace.clear();
+          break;
+        }
 
-          graph.addEdge(nodeId1, nodeId2, surface);
-          graph.addEdge(nodeId2, nodeId1, surface);
-          addedNodes.add(nodeId1);
-          addedNodes.add(nodeId2);
+        if (distance >= simplificationFactor) {
+          for (let nodeId of toReplace) {
+            oldToNew.set(nodeId, prev);
+          }
+          toReplace.clear();
+          addedNodes.add(prev);
+          addedNodes.add(curr);
+          graph.addEdge(prev, curr, surface, fullGraph);
+          graph.addEdge(curr, prev, surface, fullGraph);
+          prev = curr;
+        } else {
+          toReplace.add(curr);
         }
       }
     }
   });
+
   for (let nodeId of graph.getNodes()) {
     if (!addedNodes.has(nodeId)) {
       graph.removeNode(nodeId);
     }
+  }
+}
+
+function getGraphSimplificationGraph(
+  graph,
+  ways,
+  nodeWayCounts,
+  simplificationFactor,
+  queryData,
+  fullGraph,
+) {
+  let addedNodes = new Set();
+
+  let mapSimplifier = new MapSimplifier(
+    queryData.radius * 2,
+    simplificationFactor,
+    { lat: queryData.startingPoint.lat, lon: queryData.startingPoint.lng },
+  );
+
+  ways.forEach((element) => {
+    if (element.type === "node") {
+      if (nodeWayCounts.get(element.id) >= 2) {
+        graph.addNode(element.id, element.lat, element.lon);
+
+        mapSimplifier.addPoint(element.lat, element.lon, element.id);
+      }
+    }
+  });
+
+  mapSimplifier.simplify();
+  let correspondanceMap = mapSimplifier.getCorrespondanceMap();
+
+  ways.forEach((element) => {
+    if (element.type === "way") {
+      let surface = getSurface(element.tags.surface, element.tags.highway);
+
+      // Conserve uniquement les intersections desirees
+      element.nodes = element.nodes.filter(
+        (nodeId) => nodeWayCounts.get(nodeId) >= 2 && graph.hasNode(nodeId),
+      );
+
+      for (let i = 0; i < element.nodes.length - 1; i++) {
+        let nodeId1 = correspondanceMap.get(element.nodes[i]);
+        let nodeId2 = correspondanceMap.get(element.nodes[i + 1]);
+        if (!nodeId1 || !nodeId2) {
+          console.log(nodeId1, nodeId2);
+          continue;
+        }
+        let path = fullGraph.aStar(nodeId1, nodeId2, [], 25);
+        if (!path) {
+          continue;
+        }
+
+        let distances = {
+          euclidean: fullGraph.getPathLengthEuclidean(path),
+          haversine: fullGraph.getPathLength(path),
+        };
+        graph.addEdge(nodeId1, nodeId2, surface, distances);
+        graph.addEdge(nodeId2, nodeId1, surface, distances);
+        addedNodes.add(nodeId1);
+        addedNodes.add(nodeId2);
+      }
+    }
+  });
+
+  for (let nodeId of graph.getNodes()) {
+    if (!addedNodes.has(nodeId)) {
+      graph.removeNode(nodeId);
+    }
+  }
+}
+
+function getGraph(
+  graph,
+  ways,
+  nodeWayCounts,
+  simplificationMode,
+  queryData,
+  fullGraph,
+) {
+  console.log("simplificationMode:", simplificationMode);
+  switch (simplificationMode) {
+    case "full":
+      getFullGraph(graph, ways);
+      break;
+    case "intersection":
+      getIntersectionGraph(graph, ways, nodeWayCounts, fullGraph);
+      break;
+    case "way-simplification":
+      getWaySimplificationGraph(graph, ways, nodeWayCounts, 25, fullGraph);
+      break;
+    case "graph-simplification":
+      getGraphSimplificationGraph(
+        graph,
+        ways,
+        nodeWayCounts,
+        25,
+        queryData,
+        fullGraph,
+      );
+      break;
   }
 }
 
@@ -259,7 +380,14 @@ async function processData(
 
   // if (queryData.simplificationMode === "full") {
   console.time("Full graph");
-  getGraph(fullGraph, data.elements, nodeWayCounts, "full", queryData);
+  getGraph(
+    fullGraph,
+    data.elements,
+    nodeWayCounts,
+    "full",
+    queryData,
+    fullGraph,
+  );
   console.timeEnd("Full graph");
   // }
   // if (queryData.simplificationMode === "intersection") {
@@ -270,18 +398,20 @@ async function processData(
     nodeWayCounts,
     "intersection",
     queryData,
+    fullGraph,
   );
   console.timeEnd("Intersection graph");
   // } else if (queryData.simplificationMode === "way-simplification") {
-  console.time("Way-simplification graph");
-  getGraph(
-    waySimplifiedGraph,
-    data.elements,
-    nodeWayCounts,
-    "way-simplification",
-    queryData,
-  );
-  console.timeEnd("Way-simplification graph");
+  // console.time("Way-simplification graph");
+  // getGraph(
+  //   waySimplifiedGraph,
+  //   data.elements,
+  //   nodeWayCounts,
+  //   "way-simplification",
+  //   queryData,
+  //   fullGraph,
+  // );
+  // console.timeEnd("Way-simplification graph");
   // } else if (queryData.simplificationMode === "graph-simplification") {
   console.time("Graph-simplification graph");
   getGraph(
@@ -290,6 +420,7 @@ async function processData(
     nodeWayCounts,
     "graph-simplification",
     queryData,
+    fullGraph,
   );
   console.timeEnd("Graph-simplification graph");
   // }
@@ -503,17 +634,85 @@ io.on("connection", function (socket) {
       endingNode: graph.getNodeCoordinates(parseInt(path[0])),
     }));
 
+    // paths.forEach((path) => {
+    //  let pathSurface = [];
+    //   for (let i = 1; i < path.path.length; ++i) {
+    //     pathSurface.push(graph.getSurfaceType(path.path[i - 1], path.path[i]));
+    //   }
+    //   path.pathSurface = pathSurface;
+    //   path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
+    //   let posElevation = 0;
+    //   let negElevation = 0;
+    //   for (let i = 1; i < path.path.length; ++i) {
+    //     let elev = path.path[i].alt - path.path[i - 1].alt;
+    //     if (elev > 0) {
+    //       posElevation += elev;
+    //     } else {
+    //       negElevation += elev;
+    //     }
+    //   }
+    //   path.elevation = { pos: posElevation, neg: negElevation };
+    // });
+
+    // Reconstruct the paths based on the full graph
+    // if (simplificationMode !== "full") {
     paths.forEach((path) => {
-      let pathSurface = [];
-      for (let i = 1; i < path.path.length; ++i) {
-        pathSurface.push(graph.getSurfaceType(path.path[i - 1], path.path[i]));
+      let completePath = [];
+      let length = path.length;
+      let partialPath = path.path;
+
+      // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
+      completePath = reconstructPath(partialPath);
+
+      // Remove the dead ends of the reconstructed path
+      completePath = removeDeadEnds(completePath, path.endingNode);
+
+      // Remove nodes from the path if it is too long
+      if (method === "path") {
+        let currLength = 0;
+        for (let j = 1; j < completePath.length; ++j) {
+          let sectionDistance = fullGraph.getHaversineCost(
+            completePath[j - 1],
+            completePath[j],
+          );
+          currLength += sectionDistance;
+          if (currLength >= length) {
+            let index =
+              Math.abs(length - currLength) <
+              Math.abs(length - (currLength - sectionDistance))
+                ? j
+                : j - 1; // Minimise la difference entre currLength et radius
+            completePath = completePath.slice(0, index + 1);
+            path.endingNode = fullGraph.getNodeCoordinates(
+              completePath[completePath.length - 1],
+            );
+            break;
+          }
+        }
+        console.log("currLength: ", currLength);
       }
-      path.pathSurface = pathSurface;
-      path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
+
+      // Get the different surfaces of the path
+      let pathSurface = [];
+      for (let i = 1; i < completePath.length; ++i) {
+        pathSurface.push(
+          fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
+        );
+      }
+
+      // The new length of the path
+      let pathLength = fullGraph.getPathLength(completePath);
+      console.log("pathlength: ", pathLength);
+
+      // Replace the node Ids by coordinates
+      completePath = completePath.map((nodeId) =>
+        fullGraph.getNodeCoordinates(nodeId),
+      );
+
       let posElevation = 0;
       let negElevation = 0;
-      for (let i = 1; i < path.path.length; ++i) {
-        let elev = path.path[i].alt - path.path[i - 1].alt;
+      for (let i = 1; i < completePath.length; ++i) {
+        let elev = completePath[i].alt - completePath[i - 1].alt;
         if (elev > 0) {
           posElevation += elev;
         } else {
@@ -521,68 +720,12 @@ io.on("connection", function (socket) {
         }
       }
       path.elevation = { pos: posElevation, neg: negElevation };
+
+      path.path = completePath;
+      path.pathSurface = pathSurface;
+      path.length = pathLength;
     });
-
-    // Reconstruct the paths based on the full graph
-    // // if (simplificationMode !== "full") {
-    // paths.forEach((path) => {
-    //   let completePath = [];
-    //   let length = path.length;
-    //   let partialPath = path.path;
-
-    //   // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
-    //   completePath = reconstructPath(partialPath);
-
-    //   // Remove the dead ends of the reconstructed path
-    //   completePath = removeDeadEnds(completePath, path.endingNode);
-
-    //   // Remove nodes from the path if it is too long
-    //   if (method === "path") {
-    //     let currLength = 0;
-    //     for (let j = 1; j < completePath.length; ++j) {
-    //       let sectionDistance = fullGraph.getHaversineCost(
-    //         completePath[j - 1],
-    //         completePath[j],
-    //       );
-    //       currLength += sectionDistance;
-    //       if (currLength >= length) {
-    //         let index =
-    //           Math.abs(length - currLength) <
-    //           Math.abs(length - (currLength - sectionDistance))
-    //             ? j
-    //             : j - 1; // Minimise la difference entre currLength et radius
-    //         completePath = completePath.slice(0, index + 1);
-    //         path.endingNode = fullGraph.getNodeCoordinates(
-    //           completePath[completePath.length - 1],
-    //         );
-    //         break;
-    //       }
-    //     }
-    //     console.log("currLength: ", currLength);
-    //   }
-
-    //   // Get the different surfaces of the path
-    //   let pathSurface = [];
-    //   for (let i = 1; i < completePath.length; ++i) {
-    //     pathSurface.push(
-    //       fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
-    //     );
-    //   }
-
-    //   // The new length of the path
-    //   let pathLength = fullGraph.getPathLength(completePath);
-    //   console.log("pathlength: ", pathLength);
-
-    //   // Replace the node Ids by coordinates
-    //   completePath = completePath.map((nodeId) =>
-    //     fullGraph.getNodeCoordinates(nodeId),
-    //   );
-
-    //   path.path = completePath;
-    //   path.pathSurface = pathSurface;
-    //   path.length = pathLength;
-    // });
-    // // }
+    // }
 
     console.timeEnd("Generation paths");
 
