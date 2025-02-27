@@ -346,7 +346,7 @@ export default class Graph {
           gScore.get(currentId) +
           this.getHaversineCost(currentId, neighborId) * surfacePenalty;
         // console.log(tentativeGScore, limit);
-        if (tentativeGScore > limit * 100) {
+        if (tentativeGScore > limit * 20) {
           return null;
         }
         // console.log("tentativeGScore:", tentativeGScore);

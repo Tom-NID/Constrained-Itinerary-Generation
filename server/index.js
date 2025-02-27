@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 import Graph from "./models/Graph.js";
 import Node from "./models/Node.js";
 import MapSimplifier from "./utils/MapSimplifier.js";
-import { get } from "https";
 
 // Get the current directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -376,9 +375,6 @@ async function processData(
   });
   console.timeEnd("Comptage relations nodes");
 
-  // console.log("simplification: ", queryData.simplificationMode);
-
-  // if (queryData.simplificationMode === "full") {
   console.time("Full graph");
   getGraph(
     fullGraph,
@@ -389,41 +385,30 @@ async function processData(
     fullGraph,
   );
   console.timeEnd("Full graph");
-  // }
-  // if (queryData.simplificationMode === "intersection") {
-  console.time("Intersection graph");
-  getGraph(
-    intersectionGraph,
-    data.elements,
-    nodeWayCounts,
-    "intersection",
-    queryData,
-    fullGraph,
-  );
-  console.timeEnd("Intersection graph");
-  // } else if (queryData.simplificationMode === "way-simplification") {
-  // console.time("Way-simplification graph");
-  // getGraph(
-  //   waySimplifiedGraph,
-  //   data.elements,
-  //   nodeWayCounts,
-  //   "way-simplification",
-  //   queryData,
-  //   fullGraph,
-  // );
-  // console.timeEnd("Way-simplification graph");
-  // } else if (queryData.simplificationMode === "graph-simplification") {
-  console.time("Graph-simplification graph");
-  getGraph(
-    simplifiedGraph,
-    data.elements,
-    nodeWayCounts,
-    "graph-simplification",
-    queryData,
-    fullGraph,
-  );
-  console.timeEnd("Graph-simplification graph");
-  // }
+
+  if (queryData.simplificationMode === "intersection") {
+    console.time("Intersection graph");
+    getGraph(
+      intersectionGraph,
+      data.elements,
+      nodeWayCounts,
+      "intersection",
+      queryData,
+      fullGraph,
+    );
+    console.timeEnd("Intersection graph");
+  } else {
+    console.time("Graph-simplification graph");
+    getGraph(
+      simplifiedGraph,
+      data.elements,
+      nodeWayCounts,
+      "graph-simplification",
+      queryData,
+      fullGraph,
+    );
+    console.timeEnd("Graph-simplification graph");
+  }
 
   console.log(
     "full: \n\tnodes: ",
@@ -705,14 +690,18 @@ io.on("connection", function (socket) {
       console.log("pathlength: ", pathLength);
 
       // Replace the node Ids by coordinates
+      partialPath = partialPath.map((nodeId) =>
+        graph.getNodeCoordinates(nodeId),
+      );
       completePath = completePath.map((nodeId) =>
         fullGraph.getNodeCoordinates(nodeId),
       );
 
       let posElevation = 0;
       let negElevation = 0;
-      for (let i = 1; i < completePath.length; ++i) {
-        let elev = completePath[i].alt - completePath[i - 1].alt;
+      for (let i = 1; i < partialPath.length; ++i) {
+        let elev = partialPath[i].alt - partialPath[i - 1].alt;
+        console.log(elev);
         if (elev > 0) {
           posElevation += elev;
         } else {
