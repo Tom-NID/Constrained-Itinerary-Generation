@@ -6,7 +6,8 @@ import PriorityQueue from "./PriorityQueue.js";
 const graph = new Graph();
 
 const MAX_REQUEST = 10;
-
+const distanceConstraint = 1000; // Double contrainte, ici 1000 par rapidité mais à implémenter dans l'UI également
+const marge = 0.2; // A mettre en parametre dans le HTML final, préciser dans l'UI que pour un tuple de contrainte, il faut augmenter cette valeur à au moins 20-25% car sinon compliqué
 // Initialisation de la map centree sur Besancon
 const map = L.map("map").setView([47.2378, 6.0241], 10);
 
@@ -485,7 +486,7 @@ async function processData(data) {
             paths = null;
             console.time("BFS Exploration");
             let startTime = performance.now();
-            paths = bfsExplore(graph, startingNode, elevationConstraint, MAX_PATHS);
+            paths = bfsExplore(graph, startingNode, elevationConstraint, distanceConstraint, MAX_PATHS);
             let endTime = performance.now();
             console.timeEnd("BFS Exploration");
             executionTime.push(endTime - startTime);
@@ -848,37 +849,81 @@ function dfsExplore(graph, startNode, elevationConstraint, maxPaths) {
     return paths.sort((a, b) => a.elevation - b.elevation);
 }
 
-function bfsExplore(graph, startNode, elevationConstraint, maxPaths) {
+/**
+ * Explore le graphe en BFS en prenant en compte deux contraintes :
+ * le dénivelé et la distance.
+ *
+ * @param {Graph} graph Le graphe contenant les nœuds et arrêtes
+ * @param {*} startNode Le nœud de départ
+ * @param {number} elevationConstraint Le dénivelé cible
+ * @param {number} distanceConstraint La distance cible
+ * @param {number} maxPaths Nombre maximum de chemins à retourner
+ * @returns Une liste de chemins avec pour chacun la liste des nœuds, le dénivelé et la distance cumulée
+ */
+function bfsExplore(graph, startNode, elevationConstraint, distanceConstraint, maxPaths) {
+    // Chaque élément de la file contient node, path, elevation et distance
+    let queue = [{
+        node: startNode,
+        path: [startNode],
+        elevation: 0,
+        distance: 0
+    }];
     let paths = [];
-    let queue = [{ node: startNode, path: [startNode], elevation: 0 }];
-    let visited = new Set();
 
+    // Tant qu'il y a des chemins à explorer et que l'on n'a pas assez de solutions
     while (queue.length > 0 && paths.length < maxPaths) {
-        let { node, path, elevation } = queue.shift(); // Retirer le premier élément (FIFO) base de BFS
+        // Extraction du premier élément (FIFO)
+        let { node, path, elevation, distance } = queue.shift();
 
-        // Vérifier la contrainte
-        if (elevation >= elevationConstraint) {
-            if (Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) { // Tolérance de 10%
-                paths.push({ path, elevation });
+        // Vérifier si le chemin atteint les deux contraintes dans une tolérance de 10%
+        if (elevation >= elevationConstraint && distance >= distanceConstraint) {
+            if (
+                Math.abs(elevation - elevationConstraint) <= elevationConstraint * marge &&
+                Math.abs(distance - distanceConstraint) <= distanceConstraint * marge
+            ) {
+                paths.push({ path, elevation, distance });
             }
+            // On peut choisir de ne pas poursuivre l'exploration de ce chemin
             continue;
         }
 
-        // Voisins
-        for (let { node: neighbor, weight } of graph.getNeighbors(node)) {
-            if (!visited.has(neighbor)) { // Cycles
-                visited.add(neighbor);
-                const elevationGain = Math.abs(graph.getCoordinates(neighbor).altitude - graph.getCoordinates(node).altitude);
+        // Pour chaque voisin du nœud courant
+        for (let { node: neighbor } of graph.getNeighbors(node)) {
+            // Éviter de créer un cycle en vérifiant si le voisin est déjà dans le chemin
+            if (!path.includes(neighbor)) {
+                // Calcul de l'élévation supplémentaire
+                let newElevation = elevation + Math.abs(
+                    graph.getCoordinates(neighbor).altitude -
+                    graph.getCoordinates(node).altitude
+                );
+                // Calcul de la distance supplémentaire en utilisant votre fonction 'measure'
+                let currentCoord = graph.getCoordinates(node);
+                let neighborCoord = graph.getCoordinates(neighbor);
+                let addedDistance = measure(
+                    currentCoord.latitude,
+                    currentCoord.longitude,
+                    neighborCoord.latitude,
+                    neighborCoord.longitude
+                );
+                let newDistance = distance + addedDistance;
+
+                // Ajout du nouveau chemin dans la file
                 queue.push({
                     node: neighbor,
                     path: [...path, neighbor],
-                    elevation: elevation + elevationGain,
+                    elevation: newElevation,
+                    distance: newDistance
                 });
             }
         }
     }
 
-    return paths.sort((a, b) => a.elevation - b.elevation); // Trier par dénivelé
+    // Tri des chemins trouvés en fonction de leur écart global par rapport aux contraintes
+    return paths.sort((a, b) => {
+        let deviationA = Math.abs(a.elevation - elevationConstraint) + Math.abs(a.distance - distanceConstraint);
+        let deviationB = Math.abs(b.elevation - elevationConstraint) + Math.abs(b.distance - distanceConstraint);
+        return deviationA - deviationB;
+    });
 }
 
 function randomWalkExplore(graph, startNode, elevationConstraint, maxPaths, maxSteps = 50000) {
