@@ -6,8 +6,8 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import Graph from "./models/Graph.js";
-import Node from "./models/Node.js";
 import MapSimplifier from "./utils/MapSimplifier.js";
+import { Worker } from "worker_threads";
 
 // Get the current directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +20,7 @@ const server = app.listen(8080, function () {
 
 // Listen on the websocket
 const io = new Server(server);
+const workers = {}; // Store workers for each client
 
 app.use(express.static("public"));
 
@@ -473,163 +474,309 @@ async function fetchData(
 
 io.on("connection", function (socket) {
   // parameters
-  let searchRadius = -1;
+  // let searchRadius = -1;
   let maxSearchRadius = -1;
-  let elevation = {};
+  // let elevation = {};
   let originLat = 0;
   let originLng = 0;
-  let precision = 0;
-  let maxPaths = 0;
-  let method = "";
+  // let precision = 0;
+  // let maxPaths = 0;
+  // let method = "";
   let terrain = [];
-  let simplificationMode = "";
+  // let simplificationMode = "";
   let request = {};
 
   // data
-  let graph = new Graph();
-  let fullGraph = new Graph();
-  let intersectionGraph = new Graph();
-  let waySimplifiedGraph = new Graph();
-  let simplifiedGraph = new Graph();
-  let startingNodeId = -1;
+  // let graph = new Graph();
+  // let fullGraph = new Graph();
+  // let intersectionGraph = new Graph();
+  // let waySimplifiedGraph = new Graph();
+  // let simplifiedGraph = new Graph();
+  // let startingNodeId = -1;
+
+  let isWorkerBusy = false;
+  let clear = true;
+
+  // Stop the task if it takes too long
+  socket.on("stopGeneration", () => {
+    if (workers[socket.id]) {
+      workers[socket.id].terminate();
+      delete workers[socket.id];
+    }
+  });
 
   socket.on("request", async (data) => {
-    request = data;
+    if (data.radius < 5000 || data.radius > 50000) {
+      socket.emit("error", "Bad radius value");
+      return;
+    }
+    if (data.maxPaths < 1 || data.maxPaths > 10) {
+      socket.emit("error", "Bad number of paths");
+      return;
+    }
+
+    // TODO verif autre valeurs
+
+    // request = data;
     console.log(data);
-    terrain = data.terrain;
+    // terrain = data.terrain;
+
+    if (isWorkerBusy) {
+      console.log("BUSY !!!!");
+      socket.emit("message", "A task is already running");
+      return;
+    }
+
+    maxSearchRadius = Math.max(data.radius, maxSearchRadius);
 
     if (
       data.radius > maxSearchRadius ||
       data.startingPoint.lat != originLat ||
       data.startingPoint.lng != originLng
     ) {
-      fullGraph.clear();
-      intersectionGraph.clear();
-      waySimplifiedGraph.clear();
-      simplifiedGraph.clear();
-      const query =
-        "data=" +
-        encodeURIComponent(`
-            [out:json][timeout:10];
-            way(around:${data.radius},${data.startingPoint.lat},${data.startingPoint.lng})["highway"~"^(secondary|tertiary|unclassified|residential|living_street|service|pedestrian|track|road|footway|bridleway|cycleway|path)$"];
-            (._;>;);
-            out body;
-          `);
+      clear = true;
 
-      let queryData = {
-        radius: data.radius,
-        startingPoint: data.startingPoint,
-        simplificationMode: data.simplificationMode,
-      };
+      // fullGraph.clear();
+      // intersectionGraph.clear();
+      // waySimplifiedGraph.clear();
+      // simplifiedGraph.clear();
+      // const query =
+      //   "data=" +
+      //   encodeURIComponent(`
+      //       [out:json][timeout:10];
+      //       way(around:${data.radius},${data.startingPoint.lat},${data.startingPoint.lng})["highway"~"^(secondary|tertiary|unclassified|residential|living_street|service|pedestrian|track|road|footway|bridleway|cycleway|path)$"];
+      //       (._;>;);
+      //       out body;
+      //     `);
 
-      await fetchData(
-        query,
-        queryData,
-        fullGraph,
-        intersectionGraph,
-        waySimplifiedGraph,
-        simplifiedGraph,
-      );
+      // let queryData = {
+      //   radius: data.radius,
+      //   startingPoint: data.startingPoint,
+      //   simplificationMode: data.simplificationMode,
+      // };
+
+      // await fetchData(
+      //   query,
+      //   queryData,
+      //   fullGraph,
+      //   intersectionGraph,
+      //   waySimplifiedGraph,
+      //   simplifiedGraph,
+      // );
     }
+    // workers
+    //
 
-    simplificationMode = data.simplificationMode;
+    const worker = new Worker("./server/worker.js", {
+      workerData: { request: data, clear: clear },
+    });
 
-    // socket.emit("graph", {
-    //   color: "blue",
-    //   coordinates: intersectionGraph.getAllNodesCoordinates(),
-    // });
+    clear = false;
+    isWorkerBusy = true;
 
-    if (simplificationMode === "full") {
-      graph = fullGraph.clone();
-    } else if (simplificationMode === "intersection") {
-      graph = intersectionGraph.clone();
-    } else if (simplificationMode === "way-simplification") {
-      graph = waySimplifiedGraph.clone();
-    } else {
-      graph = simplifiedGraph.clone();
-    }
-    await graph.setAltitudes();
+    workers[socket.id] = worker;
 
-    // socket.emit("graph", {
-    //   color: "red",
-    //   nodes: graph.getAllNodesCoordinates(),
-    //   edges: graph.getAllEdgesCoordinates(),
-    // });
+    worker.on("error", (msg) => {
+      socket.emit("error", msg);
+      return;
+    });
 
-    // graph = simplificationMode ? intersectionGraph.clone() : fullGraph.clone();
-    // graph = waySimplifiedGraph.clone();
-
-    console.log(
-      "graph: \n\tnodes: ",
-      graph.countNodes(),
-      "\n\tedges: ",
-      graph.countEdges(),
-    );
-
-    originLat = data.startingPoint.lat;
-    originLng = data.startingPoint.lng;
-
-    startingNodeId = graph.getClosestNode(originLat, originLng);
-
-    method = data.method;
-
-    searchRadius = data.radius;
-    maxSearchRadius = Math.max(searchRadius, maxSearchRadius);
-    elevation = data.elevation;
-    maxPaths = data.maxPaths;
-    precision = data.precision;
-
-    let paths = {};
-
-    console.time("Generation paths");
-    if (method === "path") {
-      paths = graph.getPathsAStar(
-        startingNodeId,
-        precision,
-        searchRadius,
-        maxPaths,
-        terrain,
-      );
-    } else if (method === "circuit") {
-      paths = graph.getCircuitAStar(
-        startingNodeId,
-        precision,
-        searchRadius / 2,
-        maxPaths,
-        terrain,
-      );
-    } else if (method === "elevation") {
-      // await graph.setAltitudes();
-
-      const nbfois = 5;
-      for (let i = 0; i < nbfois; i++) {
-        console.time("BFS Exploration");
-        console.log("Elevation:", elevation);
-        paths = graph.bfsExplore(startingNodeId, elevation.up, maxPaths);
-        console.timeEnd("BFS Exploration");
+    worker.on("message", (res) => {
+      if (res.message === "result") {
+        console.log("msg: ", res.paths);
+        socket.emit("result", {
+          request: data,
+          response: { startingNode: res.startingNode, paths: res.paths },
+        });
+        isWorkerBusy = false;
       }
-    }
+    });
 
-    // console.log(paths);
+    worker.on("error", (error) => {
+      console.error("Worker error:", error);
+    });
 
-    paths = paths.map((path) => ({
-      path: path[1].path,
-      // pathSurface: path[1].pathSurface,
-      length: path[1].length,
-      endingNode: graph.getNodeCoordinates(parseInt(path[0])),
-    }));
+    // socket.emit("result", {
+    //   request: request,
+    //   response: {
+    //     startingNode: graph.getNodeCoordinates(startingNodeId),
+    //     paths: paths,
+    //   },
+    // });
 
-    // paths.forEach((path) => {
-    //  let pathSurface = [];
-    //   for (let i = 1; i < path.path.length; ++i) {
-    //     pathSurface.push(graph.getSurfaceType(path.path[i - 1], path.path[i]));
+    // workers
+
+    // simplificationMode = data.simplificationMode;
+
+    // // socket.emit("graph", {
+    // //   color: "blue",
+    // //   coordinates: intersectionGraph.getAllNodesCoordinates(),
+    // // });
+
+    // if (simplificationMode === "full") {
+    //   graph = fullGraph.clone();
+    // } else if (simplificationMode === "intersection") {
+    //   graph = intersectionGraph.clone();
+    // } else if (simplificationMode === "way-simplification") {
+    //   graph = waySimplifiedGraph.clone();
+    // } else {
+    //   graph = simplifiedGraph.clone();
+    // }
+    // await graph.setAltitudes();
+
+    // // socket.emit("graph", {
+    // //   color: "red",
+    // //   nodes: graph.getAllNodesCoordinates(),
+    // //   edges: graph.getAllEdgesCoordinates(),
+    // // });
+
+    // // graph = simplificationMode ? intersectionGraph.clone() : fullGraph.clone();
+    // // graph = waySimplifiedGraph.clone();
+
+    // console.log(
+    //   "graph: \n\tnodes: ",
+    //   graph.countNodes(),
+    //   "\n\tedges: ",
+    //   graph.countEdges(),
+    // );
+
+    // originLat = data.startingPoint.lat;
+    // originLng = data.startingPoint.lng;
+
+    // startingNodeId = graph.getClosestNode(originLat, originLng);
+
+    // method = data.method;
+
+    // searchRadius = data.radius;
+    // maxSearchRadius = Math.max(searchRadius, maxSearchRadius);
+    // elevation = data.elevation;
+    // maxPaths = data.maxPaths;
+    // precision = data.precision;
+
+    // let paths = {};
+
+    // console.time("Generation paths");
+    // if (method === "path") {
+    //   paths = graph.getPathsAStar(
+    //     startingNodeId,
+    //     precision,
+    //     searchRadius,
+    //     maxPaths,
+    //     terrain,
+    //   );
+    // } else if (method === "circuit") {
+    //   paths = graph.getCircuitAStar(
+    //     startingNodeId,
+    //     precision,
+    //     searchRadius / 2,
+    //     maxPaths,
+    //     terrain,
+    //   );
+    // } else if (method === "elevation") {
+    //   // await graph.setAltitudes();
+
+    //   const nbfois = 5;
+    //   for (let i = 0; i < nbfois; i++) {
+    //     console.time("BFS Exploration");
+    //     console.log("Elevation:", elevation);
+    //     paths = graph.bfsExplore(startingNodeId, elevation.up, maxPaths);
+    //     console.timeEnd("BFS Exploration");
     //   }
-    //   path.pathSurface = pathSurface;
-    //   path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
+    // }
+
+    // // console.log(paths);
+
+    // paths = paths.map((path) => ({
+    //   path: path[1].path,
+    //   // pathSurface: path[1].pathSurface,
+    //   length: path[1].length,
+    //   endingNode: graph.getNodeCoordinates(parseInt(path[0])),
+    // }));
+
+    // // paths.forEach((path) => {
+    // //  let pathSurface = [];
+    // //   for (let i = 1; i < path.path.length; ++i) {
+    // //     pathSurface.push(graph.getSurfaceType(path.path[i - 1], path.path[i]));
+    // //   }
+    // //   path.pathSurface = pathSurface;
+    // //   path.path = path.path.map((nodeId) => graph.getNodeCoordinates(nodeId));
+    // //   let posElevation = 0;
+    // //   let negElevation = 0;
+    // //   for (let i = 1; i < path.path.length; ++i) {
+    // //     let elev = path.path[i].alt - path.path[i - 1].alt;
+    // //     if (elev > 0) {
+    // //       posElevation += elev;
+    // //     } else {
+    // //       negElevation += elev;
+    // //     }
+    // //   }
+    // //   path.elevation = { pos: posElevation, neg: negElevation };
+    // // });
+
+    // // Reconstruct the paths based on the full graph
+    // // if (simplificationMode !== "full") {
+    // console.log(paths);
+    // paths.forEach((path) => {
+    //   let completePath = [];
+    //   let length = path.length;
+    //   let partialPath = path.path;
+
+    //   // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
+    //   completePath = reconstructPath(partialPath);
+
+    //   // Remove the dead ends of the reconstructed path
+    //   completePath = removeDeadEnds(completePath, path.endingNode);
+
+    //   // Remove nodes from the path if it is too long
+    //   if (method === "path") {
+    //     let currLength = 0;
+    //     for (let j = 1; j < completePath.length; ++j) {
+    //       let sectionDistance = fullGraph.getHaversineCost(
+    //         completePath[j - 1],
+    //         completePath[j],
+    //       );
+    //       currLength += sectionDistance;
+    //       if (currLength >= length) {
+    //         let index =
+    //           Math.abs(length - currLength) <
+    //           Math.abs(length - (currLength - sectionDistance))
+    //             ? j
+    //             : j - 1; // Minimise la difference entre currLength et radius
+    //         completePath = completePath.slice(0, index + 1);
+    //         path.endingNode = fullGraph.getNodeCoordinates(
+    //           completePath[completePath.length - 1],
+    //         );
+    //         break;
+    //       }
+    //     }
+    //     console.log("currLength: ", currLength);
+    //   }
+
+    //   // Get the different surfaces of the path
+    //   let pathSurface = [];
+    //   for (let i = 1; i < completePath.length; ++i) {
+    //     pathSurface.push(
+    //       fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
+    //     );
+    //   }
+
+    //   // The new length of the path
+    //   let pathLength = fullGraph.getPathLength(completePath);
+    //   console.log("pathlength: ", pathLength);
+
+    //   // Replace the node Ids by coordinates
+    //   partialPath = partialPath.map((nodeId) =>
+    //     graph.getNodeCoordinates(nodeId),
+    //   );
+    //   completePath = completePath.map((nodeId) =>
+    //     fullGraph.getNodeCoordinates(nodeId),
+    //   );
+
     //   let posElevation = 0;
     //   let negElevation = 0;
-    //   for (let i = 1; i < path.path.length; ++i) {
-    //     let elev = path.path[i].alt - path.path[i - 1].alt;
+    //   for (let i = 1; i < partialPath.length; ++i) {
+    //     let elev = partialPath[i].alt - partialPath[i - 1].alt;
+    //     console.log(elev);
     //     if (elev > 0) {
     //       posElevation += elev;
     //     } else {
@@ -637,129 +784,59 @@ io.on("connection", function (socket) {
     //     }
     //   }
     //   path.elevation = { pos: posElevation, neg: negElevation };
+
+    //   path.path = completePath;
+    //   path.pathSurface = pathSurface;
+    //   path.length = pathLength;
+    // });
+    // // }
+
+    // console.log(paths);
+
+    // console.timeEnd("Generation paths");
+
+    // socket.emit("result", {
+    //   request: request,
+    //   response: {
+    //     startingNode: graph.getNodeCoordinates(startingNodeId),
+    //     paths: paths,
+    //   },
     // });
 
-    // Reconstruct the paths based on the full graph
-    // if (simplificationMode !== "full") {
-    paths.forEach((path) => {
-      let completePath = [];
-      let length = path.length;
-      let partialPath = path.path;
-
-      // Reconstruct the path based on the full graph by using aStar between each nodes of the simplified path
-      completePath = reconstructPath(partialPath);
-
-      // Remove the dead ends of the reconstructed path
-      completePath = removeDeadEnds(completePath, path.endingNode);
-
-      // Remove nodes from the path if it is too long
-      if (method === "path") {
-        let currLength = 0;
-        for (let j = 1; j < completePath.length; ++j) {
-          let sectionDistance = fullGraph.getHaversineCost(
-            completePath[j - 1],
-            completePath[j],
-          );
-          currLength += sectionDistance;
-          if (currLength >= length) {
-            let index =
-              Math.abs(length - currLength) <
-              Math.abs(length - (currLength - sectionDistance))
-                ? j
-                : j - 1; // Minimise la difference entre currLength et radius
-            completePath = completePath.slice(0, index + 1);
-            path.endingNode = fullGraph.getNodeCoordinates(
-              completePath[completePath.length - 1],
-            );
-            break;
-          }
-        }
-        console.log("currLength: ", currLength);
-      }
-
-      // Get the different surfaces of the path
-      let pathSurface = [];
-      for (let i = 1; i < completePath.length; ++i) {
-        pathSurface.push(
-          fullGraph.getSurfaceType(completePath[i - 1], completePath[i]),
-        );
-      }
-
-      // The new length of the path
-      let pathLength = fullGraph.getPathLength(completePath);
-      console.log("pathlength: ", pathLength);
-
-      // Replace the node Ids by coordinates
-      partialPath = partialPath.map((nodeId) =>
-        graph.getNodeCoordinates(nodeId),
-      );
-      completePath = completePath.map((nodeId) =>
-        fullGraph.getNodeCoordinates(nodeId),
-      );
-
-      let posElevation = 0;
-      let negElevation = 0;
-      for (let i = 1; i < partialPath.length; ++i) {
-        let elev = partialPath[i].alt - partialPath[i - 1].alt;
-        console.log(elev);
-        if (elev > 0) {
-          posElevation += elev;
-        } else {
-          negElevation += elev;
-        }
-      }
-      path.elevation = { pos: posElevation, neg: negElevation };
-
-      path.path = completePath;
-      path.pathSurface = pathSurface;
-      path.length = pathLength;
-    });
-    // }
-
-    console.timeEnd("Generation paths");
-
-    socket.emit("result", {
-      request: request,
-      response: {
-        startingNode: graph.getNodeCoordinates(startingNodeId),
-        paths: paths,
-      },
-    });
-
-    graph.clear();
+    // graph.clear();
   });
 
-  function reconstructPath(simplifiedPath) {
-    let completePath = [];
-    for (let i = 1; i < simplifiedPath.length; ++i) {
-      completePath.push(
-        ...fullGraph
-          .aStar(simplifiedPath[i - 1], simplifiedPath[i], terrain)
-          .slice(1),
-      );
-    }
-    return completePath;
-  }
+  // function reconstructPath(simplifiedPath) {
+  //   let completePath = [];
+  //   for (let i = 1; i < simplifiedPath.length; ++i) {
+  //     completePath.push(
+  //       ...fullGraph
+  //         .aStar(simplifiedPath[i - 1], simplifiedPath[i], terrain)
+  //         .slice(1),
+  //     );
+  //   }
+  //   return completePath;
+  // }
 
-  function removeDeadEnds(path, endingNode) {
-    let noDeadEnds = false;
-    while (!noDeadEnds) {
-      noDeadEnds = true;
-      for (let i = 1; i < path.length - 1; i++) {
-        let prev = path[i - 1];
-        let curr = path[i];
-        let next = path[i + 1];
-        if (prev == next && curr != endingNode) {
-          noDeadEnds = false;
-          path.splice(i, 2);
-          break;
-        }
-        if (curr == prev) {
-          noDeadEnds = false;
-          path.splice(i);
-        }
-      }
-    }
-    return path;
-  }
+  // function removeDeadEnds(path, endingNode) {
+  //   let noDeadEnds = false;
+  //   while (!noDeadEnds) {
+  //     noDeadEnds = true;
+  //     for (let i = 1; i < path.length - 1; i++) {
+  //       let prev = path[i - 1];
+  //       let curr = path[i];
+  //       let next = path[i + 1];
+  //       if (prev == next && curr != endingNode) {
+  //         noDeadEnds = false;
+  //         path.splice(i, 2);
+  //         break;
+  //       }
+  //       if (curr == prev) {
+  //         noDeadEnds = false;
+  //         path.splice(i);
+  //       }
+  //     }
+  //   }
+  //   return path;
+  // }
 });
