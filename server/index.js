@@ -518,7 +518,7 @@ io.on("connection", function (socket) {
     // TODO verif autre valeurs
 
     // request = data;
-    console.log(data);
+    // console.log(data);
     // terrain = data.terrain;
 
     if (isWorkerBusy) {
@@ -583,7 +583,7 @@ io.on("connection", function (socket) {
 
     worker.on("message", (res) => {
       if (res.message === "result") {
-        console.log("msg: ", res.paths);
+        // console.log("msg: ", res.paths);
         socket.emit("result", {
           request: data,
           response: { startingNode: res.startingNode, paths: res.paths },

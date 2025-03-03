@@ -373,7 +373,7 @@ async function fetchPathAltitudes(path) {
             if (data.elevation) {
               data.elevation.forEach((altitude, index) => {
                 // path[Object.key
-                path[index].alt = altitude;
+                path[index + i].alt = altitude;
                 // this.setAltitude(batch[index][2], altitude);
               });
             }
