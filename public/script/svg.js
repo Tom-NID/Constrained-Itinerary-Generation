@@ -40,8 +40,10 @@ export let distanceIcon = ((value) => {
 });
 
 export let markerIcon = ((value) => {
-  return `
-  `;
+  return `<svg class="${value}" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <rect width="16" height="16" id="icon-bound" fill="none" />
+  <path d="M8,0C4.688,0,2,2.688,2,6c0,6,6,10,6,10s6-4,6-10C14,2.688,11.312,0,8,0z M8,8C6.344,8,5,6.656,5,5s1.344-3,3-3s3,1.344,3,3 S9.656,8,8,8z" />
+</svg>`;
 });
 
 export let backIcon = ((value) => {
@@ -49,4 +51,19 @@ export let backIcon = ((value) => {
     <rect width="16" height="16" id="icon-bound" fill="none" />
     <polygon points="5,8 10,3 10,13" />
   </svg>`
+});
+
+export let warningIcon = ((value) => {
+  return `<svg class="${value}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="17" r="1" fill="#000000"/>
+    <path d="M12 10L12 14" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3.44722 18.1056L10.2111 4.57771C10.9482 3.10361 13.0518 3.10362 13.7889 4.57771L20.5528 18.1056C21.2177 19.4354 20.2507 21 18.7639 21H5.23607C3.7493 21 2.78231 19.4354 3.44722 18.1056Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+});
+
+export let trashIcon = ((value) => {
+  return `<svg class="${value}" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <rect width="16" height="16" id="icon-bound" fill="none" />
+    <path d="M11,5h2v8.5c0,0.825-0.675,1.5-1.5,1.5h-7C3.675,15,3,14.325,3,13.5V5h2v8h2V5h2v8h2V5z M2,2h12v2H2V2z M6,0h4v1H6V0z" />
+  </svg>`;
 });

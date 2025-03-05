@@ -1,6 +1,6 @@
 import { addSparkline } from './script/sparkline-wrapper.js' 
 import { openInGoogleMaps, downloadFile, generateGPX, generateKML } from './script/exportConverter.js';
-import { wayTypeIcon, elevationIcon, exportIcon, elevationUpIcon, elevationDownIcon, markerIcon, distanceIcon, backIcon } from './script/svg.js';
+import { wayTypeIcon, elevationIcon, exportIcon, elevationUpIcon, elevationDownIcon, markerIcon, distanceIcon, warningIcon, trashIcon} from './script/svg.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   let sock = io.connect();
@@ -32,6 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
   initLocation();
   initAllPaths();
   
+  sock.on("", (str)=> {
+    alert(str);
+  });
+  
   map.on("click", (e) => {
     let lat = e.latlng.lat;
     let lng = e.latlng.lng;
@@ -52,7 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(res => {
           drawLocation(res);
         })
-        .catch(error => console.error("Error fetching locations:", error));
+        .catch(() => {
+          alert("No node found"); 
+          initLocation();
+          console.error("Error fetching locations:", error);
+        });
       });
     }, 100);
   });
@@ -78,7 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
         listAllLocationPossibilities(data);
         selectedIndex = 0;
       })
-      .catch(error => console.error("Error fetching locations:", error));
+      .catch(() => {
+        alert("No node found"); 
+        initLocation();
+        console.error("Error fetching locations:", error);
+      });
     }, 500);
   });
   
@@ -116,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".ActionButton").forEach((value) => {
         value.style.display = "block";
       });
+      generate = false;
       return;
     }
     if (!lat || !lng) {
@@ -312,19 +325,26 @@ document.addEventListener("DOMContentLoaded", () => {
     let ul = document.querySelector(".Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
-    allPaths.forEach((pathGroup) => {
+    allPaths.forEach((pathGroup, index) => {
       let li = document.createElement("li");
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
                     <span class="Paths_Distance">${distanceIcon("Path_Distance_Icon")}${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
                     <span class="Paths_Elevation">${elevationUpIcon("Paths_Elevation_Up")}${pathGroup.request.elevation.up}m ${elevationDownIcon("Paths_Elevation_Down")}${pathGroup.request.elevation.down}m</span>
+                    <span class="Paths_Trash"> ${trashIcon("Path_Trash")}</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
                 <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
             `;
       
       ul.appendChild(li);
+      li.querySelector(".Paths_Trash").addEventListener("click", (event) => {
+        event.stopPropagation();
+        allPaths.splice(index, 1);
+        updatePathsLocalStorage();
+        updatePathsViewer();
+      })
       li.addEventListener("click", () => drawSelectedPaths(pathGroup));
       li.addEventListener("mouseover", () => {
         clearLayers();
@@ -377,16 +397,16 @@ document.addEventListener("DOMContentLoaded", () => {
     
     document.getElementById('Location_Input').value = data.display_name;
   }
-
+  
   document.querySelector('#Location_Icon i').addEventListener("click", () => {
     let lat = prompt("Enter Latitude:");
     let lng = prompt("Enter Longitude:");
-
+    
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
       alert("Invalid input! Please enter valid numbers.");
       return;
     }
-
+    
     setTimeout(() => {
       showMain("Generate");
       map.closePopup(); 
@@ -409,34 +429,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return L.polyline(coordinates, { color, weight: weight, opacity }).addTo(layer);
   }
   
-  function displayCircle(coordinate, radius, color, fillColor, opacity, fillOpacity) {
-    return L.circle(coordinate, { radius, color, fillColor, opacity, fillOpacity }).addTo(map);
-  }  
-  
   function drawSelectedPaths(all) {
+    
     let res = all.response;
     let req = all.request;
     updateMainContentWithArgument("Route");
     updateListOfSelectedPath(true);
     let ul = document.querySelector(".List_Of_Selected_Paths ul");
     let info = document.querySelector(".List_Of_Selected_Paths .Info");
-    info.innerHTML = req.name;
+    info.innerHTML = `${distanceIcon("Info_Icon")}${req.radius / 1000}km ${elevationUpIcon("Info_Icon")}${req.elevation.up}m ${elevationDownIcon("Info_Icon")}${req.elevation.down}m ${markerIcon("Info_Icon")}${req.name}`;
     if (!ul) return;
     ul.innerHTML = '';
     
     res.paths.forEach((path, index) => {
       let li = document.createElement("li");
       li.classList.add("Li_Container");
-      
       let Path_Container = document.createElement("div"); Path_Container.classList.add("Path_Container"); Path_Container.classList.add("Accordion_Container");
       li.appendChild(Path_Container);
       Path_Container.innerHTML = `
           <div class="Accordion_Title">
+          ${(path.notSatisfied) ? `<span class="Warning_Not_Satisfied" title="Generation problem with these constraints : ${path.notSatisfied.join(", ")}">${warningIcon("Accordion_Title_Icon")}<span>
+            ` : ""}
             <span class="Distance_Container">
               ${distanceIcon("Accordion_Title_Icon")} ${(path.length / 1000).toFixed(1)} km
             </span>
             <span class="Elevation_Up">${elevationUpIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.pos)} m</span>
             <span class="Elevation_Down">${elevationDownIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.neg)} m</span>
+            <span class="Accordion_Trash">${trashIcon("Accordion_Title_Icon")}</span>
           </div>`
       
       let Accordion_Text = document.createElement("div"); Accordion_Text.classList.add("Accordion_Text");
@@ -507,7 +526,6 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       ul.appendChild(li);
       let layerSparkline = L.layerGroup().addTo(map);
-      console.log(layerSparkline);
       
       addSparkline("elevation" + index, path, false, "km", path.length / 1000, map);
     });

@@ -87,14 +87,14 @@
       transition: 0.4s;
       font-size: 1rem;
 
-      // &::after {
-      //   content: '\002B';
-      //   color: #777;
-      //   font-weight: bold;
-      //   float: right;
-      //   margin-left: 5px;
-      //   margin-top: auto;
-      // }
+      &::after {
+        content: '+';
+        color: #777;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+        margin-top: auto;
+      }
 
       .Accordion_Title_Icon {
         width: 1rem;
@@ -107,9 +107,9 @@
       background-color: #ccc;
     }
 
-    // .Active.Accordion_Title::after {
-    //   content: '-';
-    // }
+    .Active::after {
+      content: '\002D';
+    }
     
     
     .active:after {
@@ -127,9 +127,17 @@
     }
   }
 
-  #List_Of_Selected_Paths_Back {
-    width: 2rem;
-    height: 2rem;
+  .List_Of_Selected_Paths_Header {
+    flex-direction: row;
+    #List_Of_Selected_Paths_Back {
+      width: 2rem;
+      height: 2rem;
+    }
+  
+    .Info_Icon {
+      width: 2rem;
+      height: 2rem;
+    }
   }
 }
 
