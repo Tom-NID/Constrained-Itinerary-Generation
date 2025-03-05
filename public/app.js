@@ -35,7 +35,15 @@ document.addEventListener("DOMContentLoaded", () => {
   sock.on("error", (str)=> {
     alert(str);
   });
+
+  sock.on("message", (str) => {
+    document.querySelector(".Generation_Info").innerHTML = "";
+    alert(str);
+  });
   
+  sock.on("generationInfo", (str) => {
+    document.querySelector(".Generation_Info").innerHTML = str;
+  });
   map.on("click", (e) => {
     let lat = e.latlng.lat;
     let lng = e.latlng.lng;
@@ -166,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   sock.on("result", (res) => {
     generate = false;
+    document.querySelector(".Generation_Info").innerHTML = "";
     document.querySelector(".Bicycle_Loaders").style.display = "none";
     document.querySelectorAll(".ActionButton").forEach((value) => {
       value.style.display = "block";
