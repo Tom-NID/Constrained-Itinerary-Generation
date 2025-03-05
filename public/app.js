@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLocation();
   initAllPaths();
   
-  sock.on("", (str)=> {
+  sock.on("error", (str)=> {
     alert(str);
   });
   
