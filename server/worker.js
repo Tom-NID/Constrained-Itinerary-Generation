@@ -410,6 +410,11 @@ async function fetchPathAltitudes(path) {
 
 let data = workerData.request;
 
+parentPort.postMessage({
+  type: "generationInfo",
+  message: "Fetching geographical data from Open Street Map.",
+});
+
 if (workerData.clear) {
   fullGraph.clear();
   intersectionGraph.clear();
@@ -447,6 +452,11 @@ if (graph.countNodes() === 0 || graph.countEdges() === 0) {
   process.exit(1);
 }
 
+parentPort.postMessage({
+  type: "generationInfo",
+  message: "Fetching altitude data from Open Meteo.",
+});
+
 await graph.setAltitudes();
 
 let originLat = data.startingPoint.lat;
@@ -472,6 +482,10 @@ let paths = {};
 // Generation des paths
 console.time("Generation paths");
 if (method === "path") {
+  parentPort.postMessage({
+    type: "generationInfo",
+    message: `Generating up to ${maxPaths} paths.`,
+  });
   paths = graph.getPathsAStar(
     startingNodeId,
     precision,
@@ -481,6 +495,10 @@ if (method === "path") {
   );
 } else if (method === "circuit") {
   console.log("circuit");
+  parentPort.postMessage({
+    type: "generationInfo",
+    message: `Generating up to ${maxPaths} circuits.`,
+  });
   paths = graph.getCircuitAStar(
     startingNodeId,
     precision,
@@ -489,6 +507,10 @@ if (method === "path") {
     terrain,
   );
 } else if (method === "elevation") {
+  parentPort.postMessage({
+    type: "generationInfo",
+    message: `Generating up to ${maxPaths} paths.`,
+  });
   const nbfois = 5;
   for (let i = 0; i < nbfois; i++) {
     console.time("BFS Exploration");
@@ -504,7 +526,11 @@ paths = paths.map((path) => ({
   endingNode: graph.getNodeCoordinates(parseInt(path[0])),
 }));
 
-// paths.forEach((path) => {
+parentPort.postMessage({
+  type: "generationInfo",
+  message: "Refining the circuit for the best efficiency.",
+});
+
 for (const path of paths) {
   let completePath = [];
   let length = path.length;
@@ -573,12 +599,10 @@ for (const path of paths) {
   path.path = completePath;
   path.pathSurface = pathSurface;
   path.length = pathLength;
-  // });
 }
 
-parentPort.postMessage({ error: true, message: "error" });
 parentPort.postMessage({
-  message: "result",
+  type: "result",
   startingNode: graph.getNodeCoordinates(startingNodeId),
   paths: paths,
 });
