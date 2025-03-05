@@ -1,5 +1,6 @@
 import { addSparkline } from './script/sparkline-wrapper.js' 
 import { openInGoogleMaps, downloadFile, generateGPX, generateKML } from './script/exportConverter.js';
+import { wayTypeIcon, elevationIcon, exportIcon, elevationUpIcon, elevationDownIcon, markerIcon, distanceIcon, backIcon } from './script/svg.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   let sock = io.connect();
@@ -9,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let timeout = null; 
   let suggestionsList;
   let allPaths = [];
+  let generate = false;
   let colorList = ["#525445", "#34796a", "#276460", "#25484f", "#28333c", "#1f2731", "#010102"]
   const wayTypes = ["hard", "semi-hard", "semi-soft", "soft"];
   const wayTypesColor = ['#18FFFF', '#0288D1', '#BF360C', '#F4511E'];
@@ -108,6 +110,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   
   document.querySelector(".ActionButton_Container").addEventListener("click", () => {
+    if (generate) {
+      sock.emit("stopGeneration");
+      document.querySelector(".Bicycle_Loaders").style.display = "none";
+      document.querySelectorAll(".ActionButton").forEach((value) => {
+        value.style.display = "block";
+      });
+      return;
+    }
     if (!lat || !lng) {
       console.log("Error : No Latitude or Longitude");
       return; 
@@ -138,9 +148,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".ActionButton").forEach((value) => {
       value.style.display = "none";
     });
+    generate = true;
   });
   
   sock.on("result", (res) => {
+    generate = false;
     document.querySelector(".Bicycle_Loaders").style.display = "none";
     document.querySelectorAll(".ActionButton").forEach((value) => {
       value.style.display = "block";
@@ -305,8 +317,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
-                    <span class="Paths_Distance">${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
-                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevation.up}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevation.down}m</span>
+                    <span class="Paths_Distance">${distanceIcon("Path_Distance_Icon")}${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
+                    <span class="Paths_Elevation">${elevationUpIcon("Paths_Elevation_Up")}${pathGroup.request.elevation.up}m ${elevationDownIcon("Paths_Elevation_Down")}${pathGroup.request.elevation.down}m</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
                 <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
@@ -316,18 +328,15 @@ document.addEventListener("DOMContentLoaded", () => {
       li.addEventListener("click", () => drawSelectedPaths(pathGroup));
       li.addEventListener("mouseover", () => {
         clearLayers();
+        let l;
         pathGroup.response.paths.forEach((path, index) => {
-          let endingNode = path.endingNode;
-          let tempEndingNode = [endingNode.lat, endingNode.lon];
-          let length = path.length;
-          
           let tempPath = path.path;
           let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
           let color = colorList[index % colorList.length];
           
-          displayPath(tempTempPath, color, 1);
-          displayCircle(tempEndingNode, 10, color, color, 1, 1);
+          l = displayPath(tempTempPath, color, 1);
         });
+        map.fitBounds(l.getBounds());
       });
     });
   }
@@ -368,13 +377,40 @@ document.addEventListener("DOMContentLoaded", () => {
     
     document.getElementById('Location_Input').value = data.display_name;
   }
+
+  document.querySelector('#Location_Icon i').addEventListener("click", () => {
+    let lat = prompt("Enter Latitude:");
+    let lng = prompt("Enter Longitude:");
+
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+      alert("Invalid input! Please enter valid numbers.");
+      return;
+    }
+
+    setTimeout(() => {
+      showMain("Generate");
+      map.closePopup(); 
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(res => res.json())
+      .then(res => {
+        console.log(res);
+        if (res.error) {
+          alert(`Invalid input! Nothing found.`);
+          return;
+        }
+        drawLocation(res);
+        localStorage.setItem('lastLocation', JSON.stringify({display_name : res.display_name, lat: lat, lon: lng}));
+      })
+      .catch(error => console.error("Error fetching locations:", error));
+    }, 100);
+  })
   
   function displayPath(coordinates, color, opacity, weight = 3, layer = map) {
-    L.polyline(coordinates, { color, weight: weight, opacity }).addTo(layer);
+    return L.polyline(coordinates, { color, weight: weight, opacity }).addTo(layer);
   }
   
   function displayCircle(coordinate, radius, color, fillColor, opacity, fillOpacity) {
-    L.circle(coordinate, { radius, color, fillColor, opacity, fillOpacity }).addTo(map);
+    return L.circle(coordinate, { radius, color, fillColor, opacity, fillOpacity }).addTo(map);
   }  
   
   function drawSelectedPaths(all) {
@@ -397,10 +433,10 @@ document.addEventListener("DOMContentLoaded", () => {
       Path_Container.innerHTML = `
           <div class="Accordion_Title">
             <span class="Distance_Container">
-              <i class="fa-solid fa-arrows-left-right"></i> ${(path.length / 1000).toFixed(1)} km
+              ${distanceIcon("Accordion_Title_Icon")} ${(path.length / 1000).toFixed(1)} km
             </span>
-            <span class="Elevation_Up"><i class="fa-solid fa-arrow-trend-up"></i>${Math.abs(path.elevation?.pos)} m</span>
-            <span class="Elevation_Down"><i class="fa-solid fa-arrow-trend-down"></i>${Math.abs(path.elevation?.neg)} m</span>
+            <span class="Elevation_Up">${elevationUpIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.pos)} m</span>
+            <span class="Elevation_Down">${elevationDownIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.neg)} m</span>
           </div>`
       
       let Accordion_Text = document.createElement("div"); Accordion_Text.classList.add("Accordion_Text");
@@ -409,16 +445,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="Analysis_Group">
             <div class="Analysis_Title" id="elevationCase">
               <div class="Elevation_Text">
-                <img class="Analysis_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png">
+                ${elevationIcon("Analysis_Icon")}
                 <p>Elevation</p>
               </div>
               <div class="Elevation_Description">
                 <div class="Up_Totals">
-                  <img class="upIcon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png">
+                  ${elevationUpIcon("upIcon")}
                   <span id="elevation${index}Up">${Math.abs(path.elevation?.pos)} m</span>
                 </div>
                 <div class="Down_Totals">
-                  <img class="downIcon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png">
+                  ${elevationDownIcon("downIcon")}
                   <span id="elevation${index}Down">${Math.abs(path.elevation?.neg)} m</span>
                 </div>
               </div>
@@ -438,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
       Accordion_Text.appendChild(Analysis_Group_WayType);
       Analysis_Group_WayType.innerHTML = `
           <div class="Analysis_Title">
-            <img class="Analysis_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png">
+            ${wayTypeIcon("Analysis_Icon")}
             Way types
           </div>`
       
@@ -450,7 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
       Accordion_Text.appendChild(Analysis_Group_Export);
       Analysis_Group_Export.innerHTML = `
           <div class="Analysis_Title">
-            <img class="Analysis_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png">
+            ${exportIcon("Analysis_Icon")}
             Export
           </div>`
       
@@ -461,15 +497,13 @@ document.addEventListener("DOMContentLoaded", () => {
       
       li.addEventListener("mouseenter", () => {
         clearLayers();
-        let endingNode = path.endingNode;
-        let tempEndingNode = [endingNode.lat, endingNode.lon];
-        let length = path.length;
         
         let tempPath = path.path;
         let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
         let color = "black"
         
-        displayPath(tempTempPath, color, 1);
+        let l = displayPath(tempTempPath, color, 1);
+        map.fitBounds(l.getBounds());
       })
       ul.appendChild(li);
       let layerSparkline = L.layerGroup().addTo(map);
@@ -500,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       let itemContent = document.createElement("div");
       itemContent.classList.add("surfaceName");
-      itemContent.innerHTML = `<span class="surfaceName">${key}</span>`;
+      itemContent.innerHTML = `<span class="surfaceName">${key[0].toUpperCase() + key.slice(1)}</span>`;
       item.appendChild(itemContent);
       
       div.appendChild(item);
@@ -539,7 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
       legendElement.classList.add("surface");
       legendElement.addEventListener("mouseout", mouseout);
       legendElement.addEventListener("mouseover", mouseover);
-      legendElement.innerHTML = `<div class="surfaceCircle a${index}"></div><div class="surfaceLine"><span class="surfaceName">${wayTypes[index]} :</span>${(value / 1000).toFixed(2)} km</div></div>`
+      legendElement.innerHTML = `<div class="surfaceCircle a${index}"></div><div class="surfaceLine"><span class="surfaceName">${wayTypes[index][0].toUpperCase() + wayTypes[index].slice(1)} :</span>${(value / 1000).toFixed(2)} km</div></div>`
       legend.appendChild(legendElement);
       
       function mouseout() {
@@ -600,31 +634,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePathsViewer();
     }
   }
-
-
-    function updateWayTypesMap(path, type, backgroundColor) {
-      let color;
-      path.pathSurface.forEach((value, index) => {
-        if (value == type) {
-          color = backgroundColor;
-        } else {
-          color = "black";
-        }
-        displayPath([path.path[index], path.path[index + 1]], color, 1);
-      });
-    }
-  
-    function updateWayTypesMap(path, type, backgroundColor) {
-      let color;
-      path.pathSurface.forEach((value, index) => {
-        if (value == type) {
-          color = backgroundColor;
-        } else {
-          color = "black";
-        }
-        displayPath([path.path[index], path.path[index + 1]], color, 1);
-      });
-    }
 });
 function accordion() {
   document.querySelectorAll(".Accordion_Title").forEach(element => {

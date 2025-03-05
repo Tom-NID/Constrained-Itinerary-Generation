@@ -634,8 +634,20 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   font-size: 1.38rem;
   margin-bottom: 5px;
 }
+.Paths ul li .Paths_Measure .Paths_Elevation, .Paths ul li .Paths_Measure .Paths_Distance {
+  text-align: center;
+  font-size: 1.5rem;
+}
+.Paths ul li .Paths_Measure .Paths_Elevation .Paths_Elevation_Up, .Paths ul li .Paths_Measure .Paths_Elevation .Paths_Elevation_Down, .Paths ul li .Paths_Measure .Paths_Elevation .Path_Distance_Icon, .Paths ul li .Paths_Measure .Paths_Distance .Paths_Elevation_Up, .Paths ul li .Paths_Measure .Paths_Distance .Paths_Elevation_Down, .Paths ul li .Paths_Measure .Paths_Distance .Path_Distance_Icon {
+  margin-right: 5px;
+  width: 1.5rem;
+  height: 1.5rem;
+}
 .Paths ul li .Paths_Location {
   font-size: 1rem;
+}
+.Paths ul li .Paths_Location i {
+  margin-right: 5px;
 }
 .Paths ul li .Paths_Number {
   position: absolute;
@@ -672,6 +684,8 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   flex-direction: row;
   flex-shrink: 0;
   counter-increment: childIndex;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 .List_Of_Selected_Paths .Li_Container::before {
   content: counter(childIndex) ". ";
@@ -746,16 +760,14 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   border: none;
   outline: none;
   transition: 0.4s;
+  font-size: 1rem;
+}
+.List_Of_Selected_Paths .Li_Container .Accordion_Title .Accordion_Title_Icon {
+  width: 1rem;
+  height: 1rem;
 }
 .List_Of_Selected_Paths .Li_Container .active, .List_Of_Selected_Paths .Li_Container .Accordion_Title:hover {
   background-color: #ccc;
-}
-.List_Of_Selected_Paths .Li_Container .Accordion_Title:after {
-  content: "+";
-  color: #777;
-  font-weight: bold;
-  float: right;
-  margin-left: 5px;
 }
 .List_Of_Selected_Paths .Li_Container .active:after {
   content: "−";
@@ -769,9 +781,16 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   border-bottom-right-radius: 10px;
   border-bottom-left-radius: 10px;
 }
+.List_Of_Selected_Paths #List_Of_Selected_Paths_Back {
+  width: 2rem;
+  height: 2rem;
+}
 
 .Analysis_Group {
   margin-top: 2rem;
+}
+.Analysis_Group:last-child {
+  margin-bottom: 2rem;
 }
 .Analysis_Group .Analysis_Title {
   color: #737373;
@@ -781,6 +800,7 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   align-items: center;
 }
 .Analysis_Group .Analysis_Title .Analysis_Icon {
+  width: 1.68rem;
   height: 1.68rem;
   margin-right: 10px;
 }
@@ -872,6 +892,8 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   display: flex;
   flex-wrap: wrap;
   flex-direction: row;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .Analysis_Group .Analysis_Content .Analysis_Legend .surface, .Analysis_Group .Analysis_Content .Analysis_Legend .Export_Element, .Analysis_Group .Analysis_Content .Export_Container .surface, .Analysis_Group .Analysis_Content .Export_Container .Export_Element {
   display: flex;
@@ -896,6 +918,10 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
 }
 .Analysis_Group .Analysis_Content .Analysis_Legend .surface .surfaceLine span, .Analysis_Group .Analysis_Content .Analysis_Legend .Export_Element .surfaceLine span, .Analysis_Group .Analysis_Content .Export_Container .surface .surfaceLine span, .Analysis_Group .Analysis_Content .Export_Container .Export_Element .surfaceLine span {
   font-weight: 500;
+  margin-right: 5px;
+}
+.Analysis_Group .Analysis_Content .Export_Container {
+  margin-top: 10px;
 }
 
 .a0 {

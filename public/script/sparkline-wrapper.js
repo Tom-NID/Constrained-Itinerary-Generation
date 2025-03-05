@@ -70,7 +70,7 @@ export function addSparkline(containerId, path, useGradient, units, kmDistance, 
     
     layer.clearLayers();
     map.addLayer(layer);
-    L.circle([dataPath[datapoint.index].lat, dataPath[datapoint.index].lon] , {radius: 2, color: "blue"}).addTo(layer);
+    L.circle([dataPath[datapoint.index].lat, dataPath[datapoint.index].lon] , {radius: 7, color: "red"}).addTo(layer);
   }
   
   let up = 0

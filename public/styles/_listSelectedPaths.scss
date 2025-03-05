@@ -10,6 +10,8 @@
   .Li_Container {
     @include displayFlex(row);
     counter-increment: childIndex; 
+    margin-top: 1rem;
+    margin-bottom: 1rem;
     
     &::before {
       content: counter(childIndex) ". ";
@@ -45,6 +47,7 @@
           text-align: center;
           align-items: center;
           justify-items: center;
+          
         }
         
         .Surface_Container {
@@ -82,19 +85,32 @@
       border: none;
       outline: none;
       transition: 0.4s;
+      font-size: 1rem;
+
+      // &::after {
+      //   content: '\002B';
+      //   color: #777;
+      //   font-weight: bold;
+      //   float: right;
+      //   margin-left: 5px;
+      //   margin-top: auto;
+      // }
+
+      .Accordion_Title_Icon {
+        width: 1rem;
+        height: 1rem;
+      }
+
     }
     
     .active, .Accordion_Title:hover {
       background-color: #ccc;
     }
+
+    // .Active.Accordion_Title::after {
+    //   content: '-';
+    // }
     
-    .Accordion_Title:after {
-      content: '\002B';
-      color: #777;
-      font-weight: bold;
-      float: right;
-      margin-left: 5px;
-    }
     
     .active:after {
       content: "\2212";
@@ -110,11 +126,17 @@
       border-bottom-left-radius: 10px;
     }
   }
+
+  #List_Of_Selected_Paths_Back {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 .Analysis_Group {
   margin-top: 2.0rem;
-  &:not(:first-child) {
+  &:last-child {
+    margin-bottom: 2rem;
   }
   
   .Analysis_Title {
@@ -125,6 +147,7 @@
     align-items: center;
     
     .Analysis_Icon {
+      width: 1.68rem;
       height: 1.68rem;
       margin-right: 10px;
     }
@@ -222,10 +245,13 @@
         }
       }
     }
+
     .Analysis_Legend, .Export_Container {
       display: flex;
       flex-wrap: wrap;
       flex-direction: row;
+      padding-left: 10px;
+      padding-right: 10px;
       .surface, .Export_Element {
         display: flex;
         flex-direction: row;
@@ -250,9 +276,14 @@
           color: #737373;
           span {
             font-weight: 500;
+            margin-right: 5px;
           }
         }
       }
+    }
+
+    .Export_Container {
+      margin-top: 10px;
     }
   }
 }
