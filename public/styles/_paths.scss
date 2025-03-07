@@ -49,14 +49,37 @@
       background-color: green;
       padding: 10px;
       
+
+
       .Paths_Measure {
         @include displayFlex(row);
         gap: 10px;
         font-size: 1.38rem;
         margin-bottom: 5px;
+
+        .Paths_Elevation, .Paths_Distance {
+          text-align: center;
+          font-size: 1.5rem;
+          
+          .Paths_Elevation_Up, .Paths_Elevation_Down, .Path_Distance_Icon {
+            margin-right: 5px;
+            width: 1.5rem;
+            height: 1.5rem;
+          }
+        }
+
+        .Paths_Trash {
+          .Path_Trash {
+            width: 1.5rem;
+            height: 1.5rem;
+          }
+        }
       }
       
       .Paths_Location {
+        i {
+          margin-right: 5px;
+        }
         font-size: 1rem;
       }
       

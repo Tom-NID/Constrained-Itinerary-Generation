@@ -1,3 +1,7 @@
+import { addSparkline } from './script/sparkline-wrapper.js' 
+import { openInGoogleMaps, downloadFile, generateGPX, generateKML } from './script/exportConverter.js';
+import { wayTypeIcon, elevationIcon, exportIcon, elevationUpIcon, elevationDownIcon, markerIcon, distanceIcon, warningIcon, trashIcon} from './script/svg.js';
+
 document.addEventListener("DOMContentLoaded", () => {
   let sock = io.connect();
   let selectedIndex;
@@ -6,16 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let timeout = null; 
   let suggestionsList;
   let allPaths = [];
+  let generate = false;
   let colorList = ["#525445", "#34796a", "#276460", "#25484f", "#28333c", "#1f2731", "#010102"]
   const wayTypes = ["hard", "semi-hard", "semi-soft", "soft"];
   const wayTypesColor = ['#18FFFF', '#0288D1', '#BF360C', '#F4511E'];
-  // const pieData = [
-  //   { name: 'Running', value: 40, color: '#18FFFF' },
-  //   { name: 'Paused', value: 26, color: '#0288D1' },
-  //   { name: 'Stopped', value: 7, color: '#BF360C' },
-  //   { name: 'Failed', value: 13, color: '#F4511E' },
-  //   { name: 'Unknown', value: 19, color: '#F9A825' },
-  // ];
   const map = L.map('Map').setView([51.505, -0.09], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
@@ -34,6 +32,18 @@ document.addEventListener("DOMContentLoaded", () => {
   initLocation();
   initAllPaths();
   
+  sock.on("error", (str)=> {
+    alert(str);
+  });
+
+  sock.on("message", (str) => {
+    document.querySelector(".Generation_Info").innerHTML = "";
+    alert(str);
+  });
+  
+  sock.on("generationInfo", (str) => {
+    document.querySelector(".Generation_Info").innerHTML = str;
+  });
   map.on("click", (e) => {
     let lat = e.latlng.lat;
     let lng = e.latlng.lng;
@@ -54,7 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(res => {
           drawLocation(res);
         })
-        .catch(error => console.error("Error fetching locations:", error));
+        .catch(() => {
+          alert("No node found"); 
+          initLocation();
+          console.error("Error fetching locations:", error);
+        });
       });
     }, 100);
   });
@@ -80,7 +94,11 @@ document.addEventListener("DOMContentLoaded", () => {
         listAllLocationPossibilities(data);
         selectedIndex = 0;
       })
-      .catch(error => console.error("Error fetching locations:", error));
+      .catch(() => {
+        alert("No node found"); 
+        initLocation();
+        console.error("Error fetching locations:", error);
+      });
     }, 500);
   });
   
@@ -112,6 +130,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   
   document.querySelector(".ActionButton_Container").addEventListener("click", () => {
+    if (generate) {
+      sock.emit("stopGeneration");
+      document.querySelector(".Bicycle_Loaders").style.display = "none";
+      document.querySelectorAll(".ActionButton").forEach((value) => {
+        value.style.display = "block";
+      });
+      generate = false;
+      return;
+    }
     if (!lat || !lng) {
       console.log("Error : No Latitude or Longitude");
       return; 
@@ -172,14 +199,19 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".ActionButton").forEach((value) => {
       value.style.display = "none";
     });
+    generate = true;
   });
   
   sock.on("result", (res) => {
+    generate = false;
+    document.querySelector(".Generation_Info").innerHTML = "";
     document.querySelector(".Bicycle_Loaders").style.display = "none";
     document.querySelectorAll(".ActionButton").forEach((value) => {
       value.style.display = "block";
     });
-    drawSelectedPaths(res.response); 
+    console.log(res);
+    
+    drawSelectedPaths(res); 
     allPaths.push(res);
     updatePathsLocalStorage();
   });
@@ -313,6 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateMainContent();
   }
   
+  
   function updateSelection(items) {
     if (!items || items.length == 0) return;
     items.forEach((elem) => {
@@ -331,34 +364,38 @@ document.addEventListener("DOMContentLoaded", () => {
     let ul = document.querySelector(".Paths ul");
     if (!ul) return;
     ul.innerHTML = '';
-    allPaths.forEach((pathGroup) => {
+    allPaths.forEach((pathGroup, index) => {
       let li = document.createElement("li");
       // <i class="fa-solid fa-trash"></i>
       li.innerHTML = `
                 <div class="Paths_Measure">
-                    <span class="Paths_Distance">${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
-                    <span class="Paths_Elevation"><i class="fa-solid fa-arrow-trend-up"></i>${pathGroup.request.elevation.up}m<i class="fa-solid fa-arrow-trend-down"></i>${pathGroup.request.elevation.down}m</span>
+                    <span class="Paths_Distance">${distanceIcon("Path_Distance_Icon")}${(pathGroup.request.radius / 1000).toFixed(1)} km</span>
+                    <span class="Paths_Elevation">${elevationUpIcon("Paths_Elevation_Up")}${pathGroup.request.elevation.up}m ${elevationDownIcon("Paths_Elevation_Down")}${pathGroup.request.elevation.down}m</span>
+                    <span class="Paths_Trash"> ${trashIcon("Path_Trash")}</span>
                 </div>
                 <span class="Paths_Location"><i class="fa-solid fa-location-dot"></i>${formatAddress(pathGroup.request.name)}</span>
                 <span class="Paths_Number">Number of paths : ${pathGroup.response.paths.length}</span>
             `;
       
       ul.appendChild(li);
-      li.addEventListener("click", () => drawSelectedPaths(pathGroup.response));
+      li.querySelector(".Paths_Trash").addEventListener("click", (event) => {
+        event.stopPropagation();
+        allPaths.splice(index, 1);
+        updatePathsLocalStorage();
+        updatePathsViewer();
+      })
+      li.addEventListener("click", () => drawSelectedPaths(pathGroup));
       li.addEventListener("mouseover", () => {
         clearLayers();
+        let l;
         pathGroup.response.paths.forEach((path, index) => {
-          let endingNode = path.endingNode;
-          let tempEndingNode = [endingNode.lat, endingNode.lon];
-          let length = path.length;
-          
           let tempPath = path.path;
           let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
           let color = colorList[index % colorList.length];
           
-          displayPath(tempTempPath, color, 1, length);
-          displayCircle(tempEndingNode, 10, color, color, 1, 1);
+          l = displayPath(tempTempPath, color, 1);
         });
+        map.fitBounds(l.getBounds());
       });
     });
   }
@@ -400,77 +437,219 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('Location_Input').value = data.display_name;
   }
   
-  function displayPath(coordinates, color, opacity, length) {
-    L.polyline(coordinates, { color, weight: 3, opacity }).addTo(map);
+  document.querySelector('#Location_Icon i').addEventListener("click", () => {
+    let lat = prompt("Enter Latitude:");
+    let lng = prompt("Enter Longitude:");
+    
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+      alert("Invalid input! Please enter valid numbers.");
+      return;
+    }
+    
+    setTimeout(() => {
+      showMain("Generate");
+      map.closePopup(); 
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(res => res.json())
+      .then(res => {
+        console.log(res);
+        if (res.error) {
+          alert(`Invalid input! Nothing found.`);
+          return;
+        }
+        drawLocation(res);
+        localStorage.setItem('lastLocation', JSON.stringify({display_name : res.display_name, lat: lat, lon: lng}));
+      })
+      .catch(error => console.error("Error fetching locations:", error));
+    }, 100);
+  })
+  
+  function displayPath(coordinates, color, opacity, weight = 3, layer = map) {
+    return L.polyline(coordinates, { color, weight: weight, opacity }).addTo(layer);
   }
   
-  function displayCircle(coordinate, radius, color, fillColor, opacity, fillOpacity) {
-    L.circle(coordinate, { radius, color, fillColor, opacity, fillOpacity }).addTo(map);
-  }  
-  
-  function drawSelectedPaths(res) {
+  function drawSelectedPaths(all) {
+    
+    let res = all.response;
+    let req = all.request;
     updateMainContentWithArgument("Route");
     updateListOfSelectedPath(true);
     let ul = document.querySelector(".List_Of_Selected_Paths ul");
+    let info = document.querySelector(".List_Of_Selected_Paths .Info");
+    info.innerHTML = `${distanceIcon("Info_Icon")}${req.radius / 1000}km ${elevationUpIcon("Info_Icon")}${req.elevation.up}m ${elevationDownIcon("Info_Icon")}${req.elevation.down}m ${markerIcon("Info_Icon")}${req.name}`;
     if (!ul) return;
     ul.innerHTML = '';
+    
     res.paths.forEach((path, index) => {
       let li = document.createElement("li");
       li.classList.add("Li_Container");
-      li.innerHTML = 
-      `<div class="Path_Container">
-        <div class="Path_Result">
-          <div class="Distance_Elevation_Container">
+      let Path_Container = document.createElement("div"); Path_Container.classList.add("Path_Container"); Path_Container.classList.add("Accordion_Container");
+      li.appendChild(Path_Container);
+      Path_Container.innerHTML = `
+          <div class="Accordion_Title">
+          ${(path.notSatisfied) ? `<span class="Warning_Not_Satisfied" title="Generation problem with these constraints : ${path.notSatisfied.join(", ")}">${warningIcon("Accordion_Title_Icon")}<span>
+            ` : ""}
             <span class="Distance_Container">
-              <i class="fa-solid fa-arrows-left-right"></i> ${(path.length / 1000).toFixed(1)} km
+              ${distanceIcon("Accordion_Title_Icon")} ${(path.length / 1000).toFixed(1)} km
             </span>
-            <span class="Elevation_Up"><i class="fa-solid fa-arrow-trend-up"></i>TODO</span>
-            <span class="Elevation_Down"><i class="fa-solid fa-arrow-trend-down"></i>TODO</span>
-          </div>
-          <div class="Surface_Container">
-            <div class="WayType_Title">
-              <img class="WayType_Icon" src="https://pass-the-baton.nyc3.digitaloceanspaces.com/assets/journey.png"> Way types
-            </div>
-            <div class="Surface">
-              <div>
-                <canvas id="chart${index}" class="Chart_Container"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="Export_Container">
-            <span><i class="fa-solid fa-share-nodes"></i> Generate share link</span>
-            <div class="Accordion_Container">
-              <button class="Accordion_Title">Export Options</button>
-              <div class="Accordion_Text">
-                <ul>
-                  ${["Open in Google Maps", "Open in Komoot", "Here WeGo", "Download GPX", "Download KML"].map(option => `<li><span>${option}</span></li>`).join('')}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
+            <span class="Elevation_Up">${elevationUpIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.pos)} m</span>
+            <span class="Elevation_Down">${elevationDownIcon("Accordion_Title_Icon")} ${Math.abs(path.elevation?.neg)} m</span>
+            <span class="Accordion_Trash">${trashIcon("Accordion_Title_Icon")}</span>
+          </div>`
       
-      li.addEventListener("click", () => li.classList.toggle("active"));
+      let Accordion_Text = document.createElement("div"); Accordion_Text.classList.add("Accordion_Text");
+      Path_Container.appendChild(Accordion_Text);
+      Accordion_Text.innerHTML = `
+          <div class="Analysis_Group">
+            <div class="Analysis_Title" id="elevationCase">
+              <div class="Elevation_Text">
+                ${elevationIcon("Analysis_Icon")}
+                <p>Elevation</p>
+              </div>
+              <div class="Elevation_Description">
+                <div class="Up_Totals">
+                  ${elevationUpIcon("upIcon")}
+                  <span id="elevation${index}Up">${Math.abs(path.elevation?.pos)} m</span>
+                </div>
+                <div class="Down_Totals">
+                  ${elevationDownIcon("downIcon")}
+                  <span id="elevation${index}Down">${Math.abs(path.elevation?.neg)} m</span>
+                </div>
+              </div>
+            </div>
+            <div class="Analysis_Content" id="elevation${index}Chart">
+              <svg id="elevation${index}" class="graphSVG aGraph" stroke-width="3"></svg>
+              <span id="elevation${index}Tooltip" class="tooltip hide"></span>
+              <div id="elevation${index}Axis" class="chartAxis">
+                <div class="borderline"></div>
+                <div class="ticks"></div>
+                <div class="tickLabels"></div>
+              </div>
+            </div>
+          </div>`
+      
+      let Analysis_Group_WayType = document.createElement("div"); Analysis_Group_WayType.classList.add("Analysis_Group");
+      Accordion_Text.appendChild(Analysis_Group_WayType);
+      Analysis_Group_WayType.innerHTML = `
+          <div class="Analysis_Title">
+            ${wayTypeIcon("Analysis_Icon")}
+            Way types
+          </div>`
+      
+      let Analysis_Content_WayType = document.createElement("div"); Analysis_Content_WayType.classList.add("Analysis_Content");
+      Analysis_Group_WayType.appendChild(Analysis_Content_WayType);
+      Analysis_Content_WayType.appendChild(wayTypeDisplay(path));
+      
+      let Analysis_Group_Export = document.createElement("div"); Analysis_Group_Export.classList.add("Analysis_Group");
+      Accordion_Text.appendChild(Analysis_Group_Export);
+      Analysis_Group_Export.innerHTML = `
+          <div class="Analysis_Title">
+            ${exportIcon("Analysis_Icon")}
+            Export
+          </div>`
+      
+      let Analysis_Content_Export = document.createElement("div"); Analysis_Content_Export.classList.add("Analysis_Content");
+      Analysis_Group_Export.appendChild(Analysis_Content_Export);
+      Analysis_Content_Export.appendChild(exportDisplay(path.path));
+      
+      
       li.addEventListener("mouseenter", () => {
         clearLayers();
-        let endingNode = path.endingNode;
-        let tempEndingNode = [endingNode.lat, endingNode.lon];
-        let length = path.length;
         
         let tempPath = path.path;
         let tempTempPath = tempPath.map((coo) => [coo.lat, coo.lon]);
         let color = "black"
         
-        displayPath(tempTempPath, color, 1, length);
-        displayCircle(tempEndingNode, 10, color, color, 1, 1);
-        
+        let l = displayPath(tempTempPath, color, 1);
+        map.fitBounds(l.getBounds());
       })
       ul.appendChild(li);
-      const lenghts = wayTypes.map(type => wayTypeCalcul(type, path));
-      updateChart(path, lenghts, index)
+      let layerSparkline = L.layerGroup().addTo(map);
+      
+      addSparkline("elevation" + index, path, false, "km", path.length / 1000, map);
     });
     accordion(); 
+  }
+  
+  function exportDisplay(path) {
+    let exportItems = {"Google Maps": openInGoogleMaps, "Download GPX": (coords) => downloadFile("coordinates.gpx", generateGPX(coords)), "Download KML": (coords) => downloadFile("coordinates.kml", generateKML(coords))};
+    let div = document.createElement("div");
+    div.classList.add("Export_Container");
+    
+    for (const [key, value] of Object.entries(exportItems)) {
+      
+      let item = document.createElement("div");
+      item.classList.add("Export_Element");
+      item.addEventListener("click", event => {
+        value(path);
+      });
+      
+      let circle = document.createElement("div");
+      circle.classList.add("surfaceCircle");
+      circle.classList.add("a4");
+      item.appendChild(circle);
+      
+      let itemContent = document.createElement("div");
+      itemContent.classList.add("surfaceName");
+      itemContent.innerHTML = `<span class="surfaceName">${key[0].toUpperCase() + key.slice(1)}</span>`;
+      item.appendChild(itemContent);
+      
+      div.appendChild(item);
+    }
+    return div;
+  }
+  
+  function wayTypeDisplay(path) {
+    let layer;
+    const lenghts = wayTypes.map(type => wayTypeCalcul(type, path));
+    let div = document.createElement("div");
+    
+    let pie = document.createElement("div");
+    pie.id = "wayPieChart";
+    pie.classList.add("wayPieChart");
+    let legend = document.createElement("div");
+    legend.id = "wayLegend";
+    legend.classList.add("Analysis_Legend");
+    
+    let total = 0;
+    lenghts.forEach(value => {
+      total += value;
+    });
+    
+    lenghts.forEach((value, index) => {
+      if (value <= 100) return; //Under 100m not display
+      let pieElement = document.createElement("div");
+      pieElement.classList.add("wayPieChartElement");
+      pieElement.classList.add(`a${index}`);
+      pieElement.addEventListener("mouseout", mouseout);
+      pieElement.addEventListener("mouseover", mouseover);
+      pieElement.style.width = `${value / total * 100}%`;
+      pie.appendChild(pieElement);
+      
+      let legendElement = document.createElement("div");
+      legendElement.classList.add("surface");
+      legendElement.addEventListener("mouseout", mouseout);
+      legendElement.addEventListener("mouseover", mouseover);
+      legendElement.innerHTML = `<div class="surfaceCircle a${index}"></div><div class="surfaceLine"><span class="surfaceName">${wayTypes[index][0].toUpperCase() + wayTypes[index].slice(1)} :</span>${(value / 1000).toFixed(2)} km</div></div>`
+      legend.appendChild(legendElement);
+      
+      function mouseout() {
+        layer.clearLayers();
+      }
+      
+      function mouseover() {
+        layer = L.layerGroup().addTo(map);
+        path.pathSurface.forEach((value, pathSurfaceIndex) => {
+          if (wayTypes[index] == value) {
+            displayPath([path.path[pathSurfaceIndex], path.path[pathSurfaceIndex + 1]], wayTypesColor[index], 1, 10, layer);
+          }
+        });
+      }
+    });
+    
+    div.appendChild(pie);
+    div.appendChild(legend);
+    return div;
   }
   
   function wayTypeCalcul(type, path) {
@@ -512,103 +691,29 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePathsViewer();
     }
   }
-  function updateChart(path, lengths, index) {
-    const ctx = document.getElementById('chart' + index);
-    ctx.height = 100;
-    ctx.width = 250;
-    let filteredIndices = lengths
-    .map((value, index) => value < 1000 ? index : -1) // Get the indices of elements that are 0
-    .filter(index => index !== -1); // Remove -1 values (no length = 0)
-    
-    let newLengths = lengths.filter((value, index) => !filteredIndices.includes(index));
-    let newWayType = wayTypes.filter((value, index) => !filteredIndices.includes(index));
-    let newColors = wayTypesColor.filter((value, index) => !filteredIndices.includes(index));
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: newWayType,
-        datasets: [{
-          data: newLengths, 
-          backgroundColor: newColors,
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'right',
-            labels: {
-              generateLabels: function(chart) {
-                let data = chart.data.datasets[0].data;
-                return chart.data.labels.map((label, index) => {
-                  let value = data[index];
-                  let percentage = (value / 1000).toFixed(1);
-                  return {
-                    text: `${label} ${percentage} km`, 
-                    fillStyle: chart.data.datasets[0].backgroundColor[index],
-                    hidden: false,
-                    boxWidth: 20,
-                    boxHeight: 20
-                  };
-                });
-              }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function (tooltipItem) {
-                let value = tooltipItem.raw;
-                return `${tooltipItem.label} = ${(value / 1000).toFixed(1)} km`;
-              }
-            }
-          }
-        },
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        onHover: function (event, chartElement) {
-          let chart = event.chart;
-          if (chartElement && chartElement.length) {
-            clearLayers();
-            updateWayTypesMap(path, chart.data.labels[chartElement[0].index], chart.data.datasets[0].backgroundColor[chartElement[0].index]);
-          }
-        },
-        onLeave: function (event, chartElement) {
-          clearLayers();
-          displayPath(path.path, "black", 1);
-        }}
-      });
-    }
-
-    function updateWayTypesMap(path, type, backgroundColor) {
-      let color;
-      path.pathSurface.forEach((value, index) => {
-        if (value == type) {
-          color = backgroundColor;
-        } else {
-          color = "black";
+});
+function accordion() {
+  document.querySelectorAll(".Accordion_Title").forEach(element => {
+    element.addEventListener("click", function(event) {
+      event.stopPropagation();
+      let clickedHimSelf = false;
+      document.querySelectorAll(".Accordion_Title.Active").forEach(elementActive => {
+        if (elementActive == element) {
+          clickedHimSelf = true;
         }
-        displayPath([path.path[index], path.path[index + 1]], color, 1);
-      });
-    }
-  });
-  function accordion() {
-    document.querySelectorAll(".Accordion_Title").forEach(element => {
-      element.addEventListener("click", function(event) {
-        event.stopPropagation();
+        elementActive.classList.remove("Active");
+        var accordionText = elementActive.nextElementSibling;
+        accordionText.style.maxHeight = null;
+      })
+      if (!clickedHimSelf) {
         this.classList.toggle("Active");
-        var accordionText = this.nextElementSibling;
+        let accordionText = this.nextElementSibling;
         if (accordionText.style.maxHeight) {
           accordionText.style.maxHeight = null;
         } else {
           accordionText.style.maxHeight = accordionText.scrollHeight + "px";
         } 
-      });
+      }
     });
-  }
-  
-  
+  });
+}
