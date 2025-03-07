@@ -116,27 +116,57 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Error : No Latitude or Longitude");
       return; 
     }
-    
-    const radius = parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000);
+
     const maxPaths = parseInt(document.querySelector(".Paths_Slider .Slider_Handle").value);
     const method = document.querySelector(".Method_Container input:checked").value;
     const terrain = Array.from(document.querySelectorAll(".WayTypes_Checkbox input:checked")).map((checkbox) => checkbox.value);
+    const distanceCheckbox = document.querySelector("#Use_Distance");
+    const elevationCheckbox = document.querySelector("#Use_Elevation");
+    const useDistance = distanceCheckbox.checked;
+    const useElevation = elevationCheckbox.checked;
+    const radius = useDistance ? parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000) : null; // Si la distance est décochée alors radius vaut null
     const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
     const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
     const name = document.querySelector("#Location_Input").value;
     const simplification = document.querySelector(".Simplification_Radio input:checked").value;
-    
+
+
+    //Ces deux listeners sont utilisés pour qu'au moins une des contraintes soient sélectionnés
+    document.querySelector("#Use_Distance").addEventListener("change", (e) => {
+      console.log("AAAAAA");
+      if (!e.target.checked) {
+        // Si l'utilisateur décoche la distance, on recoche l'élévation
+        elevationCheckbox.checked = true;
+        // Appliquer un style pour indiquer que la contrainte distance est inactive
+        document.querySelector(".Distance_Container").classList.add("disabled");
+      } else {
+        document.querySelector(".Distance_Container").classList.remove("disabled");
+      }
+    });
+
+    elevationCheckbox.addEventListener("change", (e) => {
+      console.log("BBBBB");
+      if (!e.target.checked) {
+        // Si l'utilisateur décoche l'élévation, on recoche la distance
+        distanceCheckbox.checked = true;
+        document.querySelector(".Elevation_Container").classList.add("disabled");
+      } else {
+        document.querySelector(".Elevation_Container").classList.remove("disabled");
+      }
+    });
+
     sock.emit("request", {
       startingPoint : {lat : lat, lng : lng},
       radius : radius,
       maxPaths : maxPaths,
-      method: method, 
+      method: method,
       terrain: terrain,
-      elevation: {up: elevationUp, down: elevationDown},
+      elevation: {up: elevationUp, down: elevationDown, use: useElevation},
+      useDistance: useDistance,
       precision: 1,
       simplificationMode: simplification,
       name: name,
-    }); 
+    });
     localStorage.setItem('lastLocation', JSON.stringify({display_name : name, lat: lat, lon: lng}));
     document.querySelector(".Bicycle_Loaders").style.display = "block";
     document.querySelectorAll(".ActionButton").forEach((value) => {

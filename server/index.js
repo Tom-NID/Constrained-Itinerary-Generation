@@ -582,7 +582,7 @@ io.on("connection", function (socket) {
     let paths = {};
 
     console.time("Generation paths");
-    if (method === "path") {
+    if (method === "path" && !data.elevation.use) {
       paths = graph.getPathsAStar(
         startingNodeId,
         precision,
@@ -598,16 +598,14 @@ io.on("connection", function (socket) {
         maxPaths,
         terrain,
       );
-    } else if (method === "elevation") {
-      // await graph.setAltitudes();
+    } else if (data.useDistance && data.elevation.use) {
+      await graph.setAltitudes();
 
-      const nbfois = 5;
-      for (let i = 0; i < nbfois; i++) {
-        console.time("BFS Exploration");
-        console.log("Elevation:", elevation);
-        paths = graph.bfsExplore(startingNodeId, elevation.up, maxPaths);
-        console.timeEnd("BFS Exploration");
-      }
+      paths = graph.bfsExplore(startingNodeId, data.radius, data.elevation.up, maxPaths, data.terrain);
+    } else if (!data.useDistance && data.elevation.use) {
+      await graph.setAltitudes();
+      // Seul le dénivelé est demandé donc on passe null comme distance et BFS ignorera cette contrainte
+      paths = graph.bfsExplore(startingNodeId, null, data.elevation.up, maxPaths, data.terrain);
     }
 
     // console.log(paths);

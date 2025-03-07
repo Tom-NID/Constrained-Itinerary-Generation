@@ -659,66 +659,71 @@ export default class Graph {
     console.log("Elevation fetched");
   }
 
-  bfsExplore(startingNodeId, elevationConstraint, maxPaths) {
-    let paths = {};
-    let queue = [
-      { node: startingNodeId, path: [startingNodeId], elevation: 0 },
-    ];
-    let visited = new Set();
+  bfsExplore(startingNodeId, distanceConstraint, elevationConstraint, maxPaths, terrain) {
+    let queue = [{
+      node: startingNodeId,
+      path: [startingNodeId],
+      distance: 0,
+      elevation: 0,
+      surfaceBreakdown: {}
+    }];
+    let validPaths = {};
 
-    console.log(
-      queue.length > 0,
-      Object.keys(paths).length < maxPaths,
-      Object.keys(paths),
-      maxPaths,
-    );
-    while (queue.length > 0 && Object.keys(paths).length < maxPaths) {
-      let { node, path, elevation } = queue.shift();
+    while (queue.length > 0 && Object.keys(validPaths).length < maxPaths) {
+      let { node, path, distance, elevation, surfaceBreakdown } = queue.shift();
 
-      // Check the constraint
-      if (elevation >= elevationConstraint) {
-        if (
-          Math.abs(elevation - elevationConstraint) <=
-          elevationConstraint * 0.1
-        ) {
-          console.log(path[path.length - 1]);
-          paths[path[path.length - 1]] = {
-            path: path,
-            elevation: elevation,
-          };
-        }
+      // Si distanceConstraint est null, on ignore la contrainte de distance
+      if ((distanceConstraint === null || distance >= distanceConstraint) &&
+          Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) {
+        validPaths[path[path.length - 1]] = { path, distance, elevation, surfaceBreakdown };
         continue;
       }
 
-      // Neighbors
       for (let neighbor of this.getNeighbors(node)) {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          const elevationGain = Math.abs(
-            this.getNodeCoordinates(neighbor).alt -
-              this.getNodeCoordinates(node).alt,
-          );
-          queue.push({
-            node: neighbor,
-            path: [...path, neighbor],
-            elevation: elevation + elevationGain,
-          });
-        }
+        // Éviter de repasser par un noeud déjà dans le chemin
+        if (path.includes(neighbor)) continue;
+
+        const edgeDistance = this.getHaversineDistance(node, neighbor);
+        const terrainType = this.getSurfaceType(node, neighbor);
+        // Si le terrain est préféré, coefficient 1, sinon pénalité (1.2 choisi)
+        const penaltyFactor = terrain.includes(terrainType) ? 1 : 1.2;
+        const newDistance = distance + edgeDistance * penaltyFactor;
+
+        const currentAlt = this.getNodeCoordinates(node).alt;
+        const neighborAlt = this.getNodeCoordinates(neighbor).alt;
+        const elevationGain = Math.abs(neighborAlt - currentAlt);
+        const newElevation = elevation + elevationGain;
+
+        // On met à jour le cumul des distances par type
+        let newSurfaceBreakdown = { ...surfaceBreakdown };
+        newSurfaceBreakdown[terrainType] =
+            (newSurfaceBreakdown[terrainType] || 0) + edgeDistance;
+
+        queue.push({
+          node: neighbor,
+          path: [...path, neighbor],
+          distance: newDistance,
+          elevation: newElevation,
+          surfaceBreakdown: newSurfaceBreakdown,
+        });
       }
     }
-    // return paths.sort((a, b) => a.elevation - b.elevation);
-    const entries = Object.entries(paths);
-    const sortedEntries = entries.sort(
-      (a, b) =>
-        Math.abs(a[1].elevation - elevationConstraint) -
-        Math.abs(b[1].elevation - elevationConstraint),
-    );
 
-    console.log("sortedEntries: ", sortedEntries);
+    // Trier selon la proximité des contraintes
+    const entries = Object.entries(validPaths);
+    const sortedEntries = entries.sort((a, b) => {
+      const diffA = (distanceConstraint === null ? 0 : Math.abs(a[1].distance - distanceConstraint)) +
+          Math.abs(a[1].elevation - elevationConstraint);
+      const diffB = (distanceConstraint === null ? 0 : Math.abs(b[1].distance - distanceConstraint)) +
+          Math.abs(b[1].elevation - elevationConstraint);
+      return diffA - diffB;
+    });
 
     return sortedEntries.slice(0, maxPaths);
   }
 }
+
+
 // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
 function shuffle(array) {
   let currentIndex = array.length;

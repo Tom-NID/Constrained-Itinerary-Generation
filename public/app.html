@@ -73,6 +73,8 @@
             <label for="Circuit" title="A loop, from your location to your location"><input id="Circuit" type="radio" name="method" value="circuit">Circuit</label>
           </div>
           <div class="Distance_Container">
+            <input type="checkbox" id="Use_Distance" checked>
+            <label for="Use_Distance">Définir une distance souhaitée</label>
             <p class="Route_Label" title="Distance">
               <span></span>
               Length
@@ -110,6 +112,8 @@
             <p class="Elevation_Label" title="Elevation (if circuit mode is enabled, downward elevation will not be taken into account)">
               Elevation
             </p>
+            <input type="checkbox" id="Use_Elevation">
+            <label for="Use_Elevation">Définir un dénivelé souhaité</label>
             <div class="Elevation_Slider">
               <div id="Elevation_Container_Up">
                 <i class="fa-solid fa-arrow-trend-up"></i>
