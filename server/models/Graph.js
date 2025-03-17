@@ -741,8 +741,8 @@ export default class Graph {
 
       // Tri de la queue pour prioriser les chemins prometteurs
       queue.sort((a, b) => {
-        let errorA = (targetUp - a.elevationUp) + (useDistance ? (targetDistance - a.distance) : 0);
-        let errorB = (targetUp - b.elevationUp) + (useDistance ? (targetDistance - b.distance) : 0);
+        let errorA = targetUp - a.elevationUp + (useDistance ? targetDistance - a.distance : 0);
+        let errorB = targetUp - b.elevationUp + (useDistance ? targetDistance - b.distance : 0);
         return errorA - errorB;
       });
     }
