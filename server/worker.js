@@ -512,7 +512,21 @@ if (method === "path") {
     message: `Generating up to ${maxPaths} paths.`
   });
   // Pour le calcul avec BFS, on passe le rayon (distanceConstraint), l'objet elevation et la liste terrain
-  paths = graph.bfsExplore(startingNodeId, searchRadius, elevation, maxPaths, terrain, data.useDistance, data.negativeElevation);
+  paths = graph.bfsExplore(
+      startingNodeId,
+      searchRadius,
+      elevation,
+      maxPaths,
+      terrain,
+      data.useDistance,
+      data.negativeElevation,
+      (msg) => {
+        parentPort.postMessage({
+          type: "log",
+          message: msg
+        });
+      }
+  );
 }
 
 // Transformation finale des résultats

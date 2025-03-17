@@ -49,7 +49,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on("request", async (data) => {
-    if (data.radius < 5000 || data.radius > 50000) {
+    if (data.radius < 1000 || data.radius > 50000) {
       socket.emit("error", "Bad radius value");
       return;
     }
@@ -107,7 +107,10 @@ io.on("connection", function (socket) {
           response: { startingNode: res.startingNode, paths: res.paths },
         });
         isWorkerBusy = false;
-      } else if (res.type === "generationInfo") {
+      }
+      if (res.type === "log") {
+        console.log(res.message); // Affiche le log dans la console du serveur
+      }else if (res.type === "generationInfo") {
         socket.emit("generationInfo", res.message);
       }
     });

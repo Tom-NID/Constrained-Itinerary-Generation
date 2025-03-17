@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   L.control.zoom({ position: 'topright' }).addTo(map);
   
   window.addEventListener("resize", () => {
-    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 5, 50);
+    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 1, 50);
     updateSliderMarBel(document.querySelector(".Nb_Paths_Container"), "", 1, 10);
     updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
   });
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const useElevation = elevationCheckbox.checked;
     const radius = useDistance
         ? parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000)
-        : (parseInt(document.querySelector("#Elevation_Up").value) * 50);
+        : (parseInt(document.querySelector("#Elevation_Up").value) * 30); // Radius 30x + grand que la contrainte de dénivelé
     const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
     const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
     const name = document.querySelector("#Location_Input").value;
@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function initSliderLengthInput() {
-    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 5, 50);
+    updateSliderMarBel(document.querySelector(".Distance_Container"), " km", 1, 50);
     updateSliderMarBel(document.querySelector(".Nb_Paths_Container"), "", 1, 10);
     updateSliderMarBel(document.querySelector(".Precision_Container"), "", 1, 5, 1);
   }

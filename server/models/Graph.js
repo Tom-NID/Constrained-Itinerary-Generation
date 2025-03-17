@@ -659,9 +659,9 @@ export default class Graph {
   }
 
 
-  bfsExplore(startingNodeId, distanceConstraint, elevationConstraint, maxPaths, terrain, useDistance, allowNegativeElevation) {
-    const margin = 0.20; // marge d'erreur de 20 %
-
+  bfsExplore(startingNodeId, distanceConstraint, elevationConstraint, maxPaths, terrain, useDistance, allowNegativeElevation, logger = () => {}) {
+    // Définition d'une marge en fonction de l'utilisation de la contrainte distance
+    const margin = useDistance ? 0.35 : 0.15;
     const targetUp = elevationConstraint.up;
     const targetDown = elevationConstraint.down;
 
@@ -670,7 +670,6 @@ export default class Graph {
       targetDistance = distanceConstraint;
       tolDistance = margin * targetDistance;
     }
-
     const tolUp = margin * targetUp;
     const tolDown = margin * targetDown;
 
@@ -686,58 +685,48 @@ export default class Graph {
     while (queue.length > 0 && paths.length < maxPaths) {
       let { node, path, elevationUp, elevationDown, distance } = queue.shift();
 
-      // Vérification des contraintes :
-      // - La montée doit être dans [targetUp - tolUp, targetUp + tolUp]
-      // - Si allowNegativeElevation est true, la descente doit être dans [targetDown - tolDown, targetDown + tolDown],
-      //   sinon on ne vérifie pas la contrainte négative.
-      // - Si useDistance, la distance doit être dans [targetDistance - tolDistance, targetDistance + tolDistance]
-      let candidate = true;
-      if (Math.abs(elevationUp - targetUp) > tolUp) candidate = false;
-      if (allowNegativeElevation) {
-        if (Math.abs(elevationDown - targetDown) > tolDown) candidate = false;
-      }
-      if (useDistance) {
-        if (Math.abs(distance - targetDistance) > tolDistance) candidate = false;
-      }
-
-      if (elevationUp >= targetUp && (!useDistance || distance >= targetDistance)) {
-        if (candidate) {
-          paths.push({
-            end: node,
-            path,
-            length: distance,
-            elevation: { pos: elevationUp, neg: allowNegativeElevation ? elevationDown : 0 }
-          });
-        }
-        // On ne prolonge pas ce chemin pour favoriser la variété
+      // Early pruning : si la distance dépasse largement la contrainte cible, abandonner cette branche
+      if (useDistance && distance > targetDistance + tolDistance) {
         continue;
       }
 
-      // Obtenir et mélanger les voisins pour favoriser la variété
+      // Log périodique
+      if (queue.length % 10 === 0) {
+        logger(`Chemin en cours : élévationUp=${elevationUp}, distance=${distance.toFixed(2)} m`);
+      }
+
+      // Vérification candidate : on vérifie si les écarts en élévation et en distance sont dans la tolérance
+      let elevOk = Math.abs(elevationUp - targetUp) <= tolUp;
+      let distOk = !useDistance || Math.abs(distance - targetDistance) <= tolDistance;
+
+      if (elevOk && distOk) {
+        // Le chemin est suffisamment proche des contraintes (même s'il n'a pas "atteint" targetUp)
+        paths.push({
+          end: node,
+          path: path,
+          length: distance,
+          elevation: { pos: elevationUp, neg: allowNegativeElevation ? elevationDown : 0 }
+        });
+        // On n'étend pas davantage ce chemin pour favoriser la diversité
+        continue;
+      }
+
+      // Expansion : traitement des voisins
       let neighbors = Array.from(this.getNeighbors(node));
-      shuffle(neighbors);
+      shuffle(neighbors); // Mélange aléatoire pour diversifier l'exploration
 
       for (let neighborId of neighbors) {
         neighborId = parseInt(neighborId);
-        if (path.includes(neighborId)) continue;
+        if (path.includes(neighborId)) continue; // éviter les cycles
 
         const currentCoord = this.getNodeCoordinates(node);
         const neighborCoord = this.getNodeCoordinates(neighborId);
 
-        // Calcul des élévations :
         let altDiff = (neighborCoord.alt || 0) - (currentCoord.alt || 0);
         let addedElevationUp = altDiff > 0 ? altDiff : 0;
-        let addedElevationDown = 0;
-        // Si on prend en compte le négatif, on cumule la valeur absolue de la descente
-        if (altDiff < 0 && allowNegativeElevation) {
-          addedElevationDown = Math.abs(altDiff);
-        }
-        // Si allowNegativeElevation est false, on n'ajoute rien pour la descente.
-
-        const newElevationUp = elevationUp + addedElevationUp;
-        const newElevationDown = elevationDown + addedElevationDown;
-
-        // Calcul de la distance
+        let addedElevationDown = (allowNegativeElevation && altDiff < 0) ? Math.abs(altDiff) : 0;
+        let newElevationUp = elevationUp + addedElevationUp;
+        let newElevationDown = elevationDown + addedElevationDown;
         let addedDistance = this.getHaversineCost(node, neighborId);
         let newDistance = distance + addedDistance;
 
@@ -749,22 +738,19 @@ export default class Graph {
           elevationDown: newElevationDown
         });
       }
-    }
 
-    // Tri final des chemins trouvés en fonction de leur écart total par rapport aux cibles.
-    // Pour la descente, on ne prend en compte l'écart que si allowNegativeElevation est true.
-    paths.sort((a, b) => {
-      let devA = Math.abs(a.elevation.pos - targetUp) + (useDistance ? Math.abs(a.distance - targetDistance) : 0);
-      let devB = Math.abs(b.elevation.pos - targetUp) + (useDistance ? Math.abs(b.distance - targetDistance) : 0);
-      if (allowNegativeElevation) {
-        devA += Math.abs(a.elevation.neg - targetDown);
-        devB += Math.abs(b.elevation.neg - targetDown);
-      }
-      return devA - devB;
-    });
+      // Tri de la queue pour prioriser les chemins prometteurs
+      queue.sort((a, b) => {
+        let errorA = (targetUp - a.elevationUp) + (useDistance ? (targetDistance - a.distance) : 0);
+        let errorB = (targetUp - b.elevationUp) + (useDistance ? (targetDistance - b.distance) : 0);
+        return errorA - errorB;
+      });
+    }
 
     return paths;
   }
+
+
 
 }
 
