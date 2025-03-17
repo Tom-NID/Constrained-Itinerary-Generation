@@ -53,6 +53,10 @@ io.on("connection", function (socket) {
       socket.emit("error", "Bad radius value");
       return;
     }
+    if (data.elevation.up > 1000 || data.elevation.down > 1000) {
+      socket.emit("error", "Elevation too high");
+      return;
+    }
     if (data.maxPaths < 1 || data.maxPaths > 10) {
       socket.emit("error", "Bad number of paths");
       return;

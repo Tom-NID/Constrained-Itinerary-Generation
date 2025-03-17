@@ -509,22 +509,29 @@ if (method === "path") {
 } else if (method === "elevation") {
   parentPort.postMessage({
     type: "generationInfo",
-    message: `Generating up to ${maxPaths} paths.`,
+    message: `Generating up to ${maxPaths} paths.`
   });
-  const nbfois = 5;
-  for (let i = 0; i < nbfois; i++) {
-    console.time("BFS Exploration");
-    console.log("Elevation:", elevation);
-    paths = graph.bfsExplore(startingNodeId, elevation.up, maxPaths);
-    console.timeEnd("BFS Exploration");
-  }
+  // Pour le calcul avec BFS, on passe le rayon (distanceConstraint), l'objet elevation et la liste terrain
+  paths = graph.bfsExplore(startingNodeId, searchRadius, elevation, maxPaths, terrain, data.useDistance, data.negativeElevation);
 }
 
-paths = paths.map((path) => ({
-  path: path[1].path,
-  length: path[1].length,
-  endingNode: graph.getNodeCoordinates(parseInt(path[0])),
-}));
+// Transformation finale des résultats
+if (method === "elevation") {
+  // Pour BFS, chaque résultat est un objet { end, path, length, elevation }
+  paths = paths.map(item => ({
+    path: item.path,
+    length: item.length,
+    endingNode: graph.getNodeCoordinates(item.end),
+    elevation: item.elevation
+  }));
+} else {
+  // Pour les autres méthodes (A*), on conserve l'ancien format
+  paths = paths.map((path) => ({
+    path: path[1].path,
+    length: path[1].length,
+    endingNode: graph.getNodeCoordinates(parseInt(path[0])),
+  }));
+}
 
 parentPort.postMessage({
   type: "generationInfo",

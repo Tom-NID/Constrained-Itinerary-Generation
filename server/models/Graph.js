@@ -625,6 +625,7 @@ export default class Graph {
 
             if (response.ok) {
               const data = await response.json();
+              await new Promise(resolve => setTimeout(resolve, 5));
               if (data.elevation) {
                 data.elevation.forEach((altitude, index) => {
                   this.setAltitude(batch[index][2], altitude);
@@ -633,7 +634,7 @@ export default class Graph {
               success = true;
             } else if (response.status === 429) {
               console.warn(`429 Too Many Requests: Retrying in ${delay}ms...`);
-              await sleep(delay);
+              await new Promise(resolve => setTimeout(resolve, delay));
               delay *= 2; // backoff
               attempt++;
             } else {
@@ -657,68 +658,114 @@ export default class Graph {
     console.log("Elevation fetched");
   }
 
-  bfsExplore(startingNodeId, distanceConstraint, elevationConstraint, maxPaths, terrain) {
+
+  bfsExplore(startingNodeId, distanceConstraint, elevationConstraint, maxPaths, terrain, useDistance, allowNegativeElevation) {
+    const margin = 0.20; // marge d'erreur de 20 %
+
+    const targetUp = elevationConstraint.up;
+    const targetDown = elevationConstraint.down;
+
+    let targetDistance = 0, tolDistance = 0;
+    if (useDistance) {
+      targetDistance = distanceConstraint;
+      tolDistance = margin * targetDistance;
+    }
+
+    const tolUp = margin * targetUp;
+    const tolDown = margin * targetDown;
+
     let queue = [{
       node: startingNodeId,
       path: [startingNodeId],
       distance: 0,
-      elevation: 0,
-      surfaceBreakdown: {}
+      elevationUp: 0,
+      elevationDown: 0
     }];
-    let validPaths = {};
+    let paths = [];
 
-    while (queue.length > 0 && Object.keys(validPaths).length < maxPaths) {
-      let { node, path, distance, elevation, surfaceBreakdown } = queue.shift();
+    while (queue.length > 0 && paths.length < maxPaths) {
+      let { node, path, elevationUp, elevationDown, distance } = queue.shift();
 
-      // Si distanceConstraint est null, on ignore la contrainte de distance
-      if ((distanceConstraint === null || distance >= distanceConstraint) &&
-          Math.abs(elevation - elevationConstraint) <= elevationConstraint * 0.1) {
-        validPaths[path[path.length - 1]] = { path, distance, elevation, surfaceBreakdown };
+      // Vérification des contraintes :
+      // - La montée doit être dans [targetUp - tolUp, targetUp + tolUp]
+      // - Si allowNegativeElevation est true, la descente doit être dans [targetDown - tolDown, targetDown + tolDown],
+      //   sinon on ne vérifie pas la contrainte négative.
+      // - Si useDistance, la distance doit être dans [targetDistance - tolDistance, targetDistance + tolDistance]
+      let candidate = true;
+      if (Math.abs(elevationUp - targetUp) > tolUp) candidate = false;
+      if (allowNegativeElevation) {
+        if (Math.abs(elevationDown - targetDown) > tolDown) candidate = false;
+      }
+      if (useDistance) {
+        if (Math.abs(distance - targetDistance) > tolDistance) candidate = false;
+      }
+
+      if (elevationUp >= targetUp && (!useDistance || distance >= targetDistance)) {
+        if (candidate) {
+          paths.push({
+            end: node,
+            path,
+            length: distance,
+            elevation: { pos: elevationUp, neg: allowNegativeElevation ? elevationDown : 0 }
+          });
+        }
+        // On ne prolonge pas ce chemin pour favoriser la variété
         continue;
       }
 
-      for (let neighbor of this.getNeighbors(node)) {
-        // Éviter de repasser par un noeud déjà dans le chemin
-        if (path.includes(neighbor)) continue;
+      // Obtenir et mélanger les voisins pour favoriser la variété
+      let neighbors = Array.from(this.getNeighbors(node));
+      shuffle(neighbors);
 
-        const edgeDistance = this.getHaversineDistance(node, neighbor);
-        const terrainType = this.getSurfaceType(node, neighbor);
-        // Si le terrain est préféré, coefficient 1, sinon pénalité (1.2 choisi)
-        const penaltyFactor = terrain.includes(terrainType) ? 1 : 1.2;
-        const newDistance = distance + edgeDistance * penaltyFactor;
+      for (let neighborId of neighbors) {
+        neighborId = parseInt(neighborId);
+        if (path.includes(neighborId)) continue;
 
-        const currentAlt = this.getNodeCoordinates(node).alt;
-        const neighborAlt = this.getNodeCoordinates(neighbor).alt;
-        const elevationGain = Math.abs(neighborAlt - currentAlt);
-        const newElevation = elevation + elevationGain;
+        const currentCoord = this.getNodeCoordinates(node);
+        const neighborCoord = this.getNodeCoordinates(neighborId);
 
-        // On met à jour le cumul des distances par type
-        let newSurfaceBreakdown = { ...surfaceBreakdown };
-        newSurfaceBreakdown[terrainType] =
-            (newSurfaceBreakdown[terrainType] || 0) + edgeDistance;
+        // Calcul des élévations :
+        let altDiff = (neighborCoord.alt || 0) - (currentCoord.alt || 0);
+        let addedElevationUp = altDiff > 0 ? altDiff : 0;
+        let addedElevationDown = 0;
+        // Si on prend en compte le négatif, on cumule la valeur absolue de la descente
+        if (altDiff < 0 && allowNegativeElevation) {
+          addedElevationDown = Math.abs(altDiff);
+        }
+        // Si allowNegativeElevation est false, on n'ajoute rien pour la descente.
+
+        const newElevationUp = elevationUp + addedElevationUp;
+        const newElevationDown = elevationDown + addedElevationDown;
+
+        // Calcul de la distance
+        let addedDistance = this.getHaversineCost(node, neighborId);
+        let newDistance = distance + addedDistance;
 
         queue.push({
-          node: neighbor,
-          path: [...path, neighbor],
+          node: neighborId,
+          path: [...path, neighborId],
           distance: newDistance,
-          elevation: newElevation,
-          surfaceBreakdown: newSurfaceBreakdown,
+          elevationUp: newElevationUp,
+          elevationDown: newElevationDown
         });
       }
     }
 
-    // Trier selon la proximité des contraintes
-    const entries = Object.entries(validPaths);
-    const sortedEntries = entries.sort((a, b) => {
-      const diffA = (distanceConstraint === null ? 0 : Math.abs(a[1].distance - distanceConstraint)) +
-          Math.abs(a[1].elevation - elevationConstraint);
-      const diffB = (distanceConstraint === null ? 0 : Math.abs(b[1].distance - distanceConstraint)) +
-          Math.abs(b[1].elevation - elevationConstraint);
-      return diffA - diffB;
+    // Tri final des chemins trouvés en fonction de leur écart total par rapport aux cibles.
+    // Pour la descente, on ne prend en compte l'écart que si allowNegativeElevation est true.
+    paths.sort((a, b) => {
+      let devA = Math.abs(a.elevation.pos - targetUp) + (useDistance ? Math.abs(a.distance - targetDistance) : 0);
+      let devB = Math.abs(b.elevation.pos - targetUp) + (useDistance ? Math.abs(b.distance - targetDistance) : 0);
+      if (allowNegativeElevation) {
+        devA += Math.abs(a.elevation.neg - targetDown);
+        devB += Math.abs(b.elevation.neg - targetDown);
+      }
+      return devA - devB;
     });
 
-    return sortedEntries.slice(0, maxPaths);
+    return paths;
   }
+
 }
 
 

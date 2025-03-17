@@ -128,6 +128,29 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSelection(items);
     }
   });
+
+  //Ces deux listeners sont utilisés pour qu'au moins une des contraintes soient sélectionnés
+  document.querySelector("#Use_Distance").addEventListener("change", (e) => {
+    if (!e.target.checked) {
+      // Si l'utilisateur décoche la distance, on recoche l'élévation
+      document.querySelector("#Use_Elevation").checked = true;
+      document.querySelector(".Distance_Container").classList.add("disabled");
+    } else {
+      document.querySelector(".Distance_Container").classList.remove("disabled");
+    }
+  });
+
+  document.querySelector("#Use_Elevation").addEventListener("change", (e) => {
+    if (!e.target.checked) {
+      // Si l'utilisateur décoche l'élévation, on recoche la distance
+      document.querySelector("#Use_Distance").checked = true;
+      document.querySelector(".Elevation_Container").classList.add("disabled");
+    } else {
+      document.getElementById("One_Way").checked = true;
+      document.getElementById("Circuit").checked = false;
+      document.querySelector(".Elevation_Container").classList.remove("disabled");
+    }
+  });
   
   document.querySelector(".ActionButton_Container").addEventListener("click", () => {
     if (generate) {
@@ -145,42 +168,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const maxPaths = parseInt(document.querySelector(".Paths_Slider .Slider_Handle").value);
-    const method = document.querySelector(".Method_Container input:checked").value;
+    let method = document.querySelector(".Method_Container input:checked").value;
     const terrain = Array.from(document.querySelectorAll(".WayTypes_Checkbox input:checked")).map((checkbox) => checkbox.value);
     const distanceCheckbox = document.querySelector("#Use_Distance");
     const elevationCheckbox = document.querySelector("#Use_Elevation");
     const useDistance = distanceCheckbox.checked;
     const useElevation = elevationCheckbox.checked;
-    const radius = useDistance ? parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000) : null; // Si la distance est décochée alors radius vaut null
+    const radius = useDistance
+        ? parseInt(document.querySelector(".Route_Slider .Slider_Handle").value * 1000)
+        : (parseInt(document.querySelector("#Elevation_Up").value) * 50);
     const elevationUp = parseInt(document.querySelector("#Elevation_Up").value);
     const elevationDown = document.querySelector("#One_Way").checked ? parseInt(document.querySelector("#Elevation_Down").value) : elevationUp;
     const name = document.querySelector("#Location_Input").value;
     const simplification = document.querySelector(".Simplification_Radio input:checked").value;
+    const negativeElevation = document.querySelector("#Allow_Negative_Elevation").checked;
 
-
-    //Ces deux listeners sont utilisés pour qu'au moins une des contraintes soient sélectionnés
-    document.querySelector("#Use_Distance").addEventListener("change", (e) => {
-      console.log("AAAAAA");
-      if (!e.target.checked) {
-        // Si l'utilisateur décoche la distance, on recoche l'élévation
-        elevationCheckbox.checked = true;
-        // Appliquer un style pour indiquer que la contrainte distance est inactive
-        document.querySelector(".Distance_Container").classList.add("disabled");
-      } else {
-        document.querySelector(".Distance_Container").classList.remove("disabled");
-      }
-    });
-
-    elevationCheckbox.addEventListener("change", (e) => {
-      console.log("BBBBB");
-      if (!e.target.checked) {
-        // Si l'utilisateur décoche l'élévation, on recoche la distance
-        distanceCheckbox.checked = true;
-        document.querySelector(".Elevation_Container").classList.add("disabled");
-      } else {
-        document.querySelector(".Elevation_Container").classList.remove("disabled");
-      }
-    });
+    if (useElevation) {
+      method = "elevation";
+      document.getElementById("One_Way").checked = true;
+    }
 
     sock.emit("request", {
       startingPoint : {lat : lat, lng : lng},
@@ -193,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
       precision: 1,
       simplificationMode: simplification,
       name: name,
+      negativeElevation: negativeElevation,
     });
     localStorage.setItem('lastLocation', JSON.stringify({display_name : name, lat: lat, lon: lng}));
     document.querySelector(".Bicycle_Loaders").style.display = "block";
