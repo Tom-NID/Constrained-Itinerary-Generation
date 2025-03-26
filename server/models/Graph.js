@@ -173,23 +173,23 @@ export default class Graph {
     const coordNode2 = this.#nodes.get(nodeId2).getCoordinates();
 
     return Math.sqrt(
-      Math.pow(coordNode1.lat - coordNode2.lat, 2) +
+        Math.pow(coordNode1.lat - coordNode2.lat, 2) +
         Math.pow(coordNode1.lon - coordNode2.lon, 2),
     );
   }
 
   getHaversineDistance(nodeId1, nodeId2, coord = {}) {
     const coordNode1 =
-      nodeId1 == -1 ? coord : this.#nodes.get(nodeId1).getCoordinates();
+        nodeId1 == -1 ? coord : this.#nodes.get(nodeId1).getCoordinates();
     const coordNode2 = this.#nodes.get(nodeId2).getCoordinates();
     const R = 6378.137; // Radius of earth in KM
     var dLat =
-      (coordNode2.lat * Math.PI) / 180 - (coordNode1.lat * Math.PI) / 180;
+        (coordNode2.lat * Math.PI) / 180 - (coordNode1.lat * Math.PI) / 180;
     var dLon =
-      (coordNode2.lon * Math.PI) / 180 - (coordNode1.lon * Math.PI) / 180;
+        (coordNode2.lon * Math.PI) / 180 - (coordNode1.lon * Math.PI) / 180;
     var a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((coordNode1.lat * Math.PI) / 180) *
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((coordNode1.lat * Math.PI) / 180) *
         Math.cos((coordNode2.lat * Math.PI) / 180) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
@@ -269,13 +269,13 @@ export default class Graph {
     while (goalNodes.length == 0) {
       for (const [nodeId, node] of this.#nodes) {
         let distanceToCenter = this.getHaversineDistance(
-          startingNodeId,
-          nodeId,
+            startingNodeId,
+            nodeId,
         );
 
         if (
-          distanceToCenter <= radius + inaccuracy &&
-          distanceToCenter >= radius - inaccuracy
+            distanceToCenter <= radius + inaccuracy &&
+            distanceToCenter >= radius - inaccuracy
         ) {
           goalNodes.push(nodeId);
         }
@@ -337,21 +337,21 @@ export default class Graph {
 
         // gScore total du depart jusque au voisin de currentId
         let surfacePenalty =
-          terrain.length == 0 ||
-          terrain.includes(this.getSurfaceType(currentId, neighborId))
-            ? 1
-            : 10;
+            terrain.length == 0 ||
+            terrain.includes(this.getSurfaceType(currentId, neighborId))
+                ? 1
+                : 10;
         // let surfacePenalty = 1;
         let tentativeGScore =
-          gScore.get(currentId) +
-          this.getHaversineCost(currentId, neighborId) * surfacePenalty;
+            gScore.get(currentId) +
+            this.getHaversineCost(currentId, neighborId) * surfacePenalty;
         if (tentativeGScore > limit * 100) {
           return null;
         }
 
         if (
-          !gScore.has(neighborId) ||
-          tentativeGScore < gScore.get(neighborId)
+            !gScore.has(neighborId) ||
+            tentativeGScore < gScore.get(neighborId)
         ) {
           // Si le chemin est plus court (moins cher) que le precedent vers ce point
 
@@ -363,8 +363,8 @@ export default class Graph {
 
           // Change le fScore pour le voisin
           fScore.set(
-            neighborId,
-            gScore.get(neighborId) +
+              neighborId,
+              gScore.get(neighborId) +
               this.getHaversineDistance(neighborId, goal),
           );
 
@@ -439,10 +439,10 @@ export default class Graph {
             currLength += sectionDistance;
             if (currLength >= radius) {
               let index =
-                Math.abs(radius - currLength) <
-                Math.abs(radius - currLength - sectionDistance)
-                  ? j
-                  : j - 1; // Minimise la difference entre currLength et radius
+                  Math.abs(radius - currLength) <
+                  Math.abs(radius - currLength - sectionDistance)
+                      ? j
+                      : j - 1; // Minimise la difference entre currLength et radius
               nodeId = path[index];
               path = path.slice(0, index + 1);
               break;
@@ -478,7 +478,7 @@ export default class Graph {
     // Trie des chemins en fonction de leur longueur par rapport au rayon
     const entries = Object.entries(paths);
     const sortedEntries = entries.sort(
-      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
+        (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
     );
 
     return sortedEntries.slice(0, maxPaths);
@@ -523,10 +523,10 @@ export default class Graph {
             currLength += sectionDistance;
             if (currLength >= searchRadius) {
               let index =
-                Math.abs(searchRadius - currLength) <
-                Math.abs(searchRadius - currLength - sectionDistance)
-                  ? j
-                  : j - 1; // Minimise la difference entre currLength et radius
+                  Math.abs(searchRadius - currLength) <
+                  Math.abs(searchRadius - currLength - sectionDistance)
+                      ? j
+                      : j - 1; // Minimise la difference entre currLength et radius
               nodeId = path[index];
               path = path.slice(0, index + 1);
               break;
@@ -537,9 +537,9 @@ export default class Graph {
           // const tempGraph = this.clone();
           for (let i = 1; i < path.length; ++i) {
             this.setHaversineCost(
-              path[i - 1],
-              path[i],
-              this.getHaversineCost(path[i - 1], path[i]) * 10,
+                path[i - 1],
+                path[i],
+                this.getHaversineCost(path[i - 1], path[i]) * 10,
             );
           }
 
@@ -548,9 +548,9 @@ export default class Graph {
 
           for (let i = 1; i < path.length; ++i) {
             this.setHaversineCost(
-              path[i - 1],
-              path[i],
-              this.getHaversineDistance(path[i - 1], path[i]),
+                path[i - 1],
+                path[i],
+                this.getHaversineDistance(path[i - 1], path[i]),
             );
           }
 
@@ -590,7 +590,7 @@ export default class Graph {
     // Trie des chemins en fonction de leur longueur par rapport au rayon
     const entries = Object.entries(paths);
     const sortedEntries = entries.sort(
-      (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
+        (a, b) => Math.abs(a[1].length - radius) - Math.abs(b[1].length - radius),
     );
 
     return sortedEntries.slice(0, maxPaths);
@@ -620,7 +620,7 @@ export default class Graph {
         while (!success && attempt < 5) {
           try {
             response = await fetch(
-              `https://api.open-meteo.com/v1/elevation?latitude=${latitudes.join(",")}&longitude=${longitudes.join(",")}`,
+                `https://api.open-meteo.com/v1/elevation?latitude=${latitudes.join(",")}&longitude=${longitudes.join(",")}`,
             );
 
             if (response.ok) {
@@ -648,7 +648,7 @@ export default class Graph {
         }
         if (!success) {
           console.error(
-            "Failed to fetch elevation data after multiple attempts.",
+              "Failed to fetch elevation data after multiple attempts.",
           );
         }
       }
@@ -749,8 +749,6 @@ export default class Graph {
 
     return paths;
   }
-
-
 
 
 
