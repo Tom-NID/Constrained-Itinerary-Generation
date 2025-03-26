@@ -610,7 +610,7 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
   cursor: pointer;
   position: relative;
   border-radius: 5px;
-  background-color: green;
+  background-color: lightgray;
   padding: 10px;
 }
 .Paths ul li .fa-trash {
@@ -1128,6 +1128,66 @@ nav .Tab_Container .Shared_Row .Shared_Column .Tab_Title span {
     transform: rotate(1turn);
   }
 }
+/* Styles pour les checkbox */
+.custom-checkbox {
+  position: absolute;
+  opacity: 0;
+  height: 0;
+  width: 0;
+}
+.custom-checkbox-label {
+  position: relative;
+  padding-left: 28px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  transition: color 0.2s ease;
+}
+.custom-checkbox-label:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  background: white;
+  transition: all 0.2s ease;
+}
+.custom-checkbox:checked + .custom-checkbox-label:before {
+  background: #4a6fa5;
+  border-color: #4a6fa5;
+}
+.custom-checkbox:checked + .custom-checkbox-label:after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 7px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Styles spécifiques */
+.NegativeElevation_Container {
+  margin-top: 8px;
+  margin-left: 24px;
+}
+
+.Elevation_Container,
+.Distance_Container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
 * {
   margin: 0;
   padding: 0;
