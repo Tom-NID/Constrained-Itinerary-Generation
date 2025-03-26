@@ -1,0 +1,65 @@
+// styles/_checkboxes.scss
+
+/* Styles pour les checkbox */
+.custom-checkbox {
+	position: absolute;
+	opacity: 0;
+	height: 0;
+	width: 0;
+
+	&-label {
+		position: relative;
+		padding-left: 28px;
+		cursor: pointer;
+		font-size: 14px;
+		color: map-get($colors, text);
+		user-select: none;
+		transition: color 0.2s ease;
+
+		&:before {
+			content: '';
+			position: absolute;
+			left: 0;
+			top: 1px;
+			width: 18px;
+			height: 18px;
+			border: 1px solid map-get($colors, border);
+			border-radius: 3px;
+			background: white;
+			transition: all 0.2s ease;
+		}
+	}
+
+	&:checked + .custom-checkbox-label {
+		&:before {
+			background: map-get($colors, primary);
+			border-color: map-get($colors, primary);
+		}
+
+		&:after {
+			content: '';
+			position: absolute;
+			left: 6px;
+			top: 7px;
+			width: 6px;
+			height: 10px;
+			border: solid white;
+			border-width: 0 2px 2px 0;
+			transform: rotate(45deg);
+		}
+	}
+}
+
+/* Styles spécifiques */
+.NegativeElevation_Container {
+	margin-top: 8px;
+	margin-left: 24px;
+}
+
+.Elevation_Container,
+.Distance_Container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 20px;
+}
