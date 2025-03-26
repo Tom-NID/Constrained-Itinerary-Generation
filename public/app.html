@@ -73,8 +73,8 @@
             <label for="Circuit" title="A loop, from your location to your location"><input id="Circuit" type="radio" name="method" value="circuit">Circuit</label>
           </div>
           <div class="Distance_Container">
-            <input type="checkbox" id="Use_Distance" checked>
-            <label for="Use_Distance">Définir une distance souhaitée</label>
+            <input type="checkbox" id="Use_Distance" class="custom-checkbox" checked>
+            <label for="Use_Distance" class="custom-checkbox-label">Distance constraint</label>
             <p class="Route_Label" title="Distance">
               <span></span>
               Length
@@ -112,11 +112,11 @@
             <p class="Elevation_Label" title="Elevation (if circuit mode is enabled, downward elevation will not be taken into account)">
               Elevation
             </p>
-            <input type="checkbox" id="Use_Elevation">
-            <label for="Use_Elevation">Définir un dénivelé souhaité</label>
+            <input type="checkbox" id="Use_Elevation" class="custom-checkbox">
+            <label for="Use_Elevation" class="custom-checkbox-label">Elevation constraint</label>
             <div class="NegativeElevation_Container">
-              <input type="checkbox" id="Allow_Negative_Elevation">
-              <label for="Allow_Negative_Elevation">Dénivelé négatif</label>
+              <input type="checkbox" id="Allow_Negative_Elevation" class="custom-checkbox">
+              <label for="Allow_Negative_Elevation" class="custom-checkbox-label">Negative elevation</label>
             </div>
             <div class="Elevation_Slider">
               <div id="Elevation_Container_Up">
